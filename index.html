@@ -6,221 +6,41 @@
 
   <!-- Leaflet -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-  <!-- Geoman -->
-  <link rel="stylesheet" href="https://unpkg.com/@geoman-io/leaflet-geoman-free@latest/dist/leaflet-geoman.css" />
+
+  <!-- Leaflet.Measure -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet-measure/dist/leaflet-measure.css" />
 
   <style>
     body { margin:0; padding:0; font-family:'Segoe UI',sans-serif; }
-
-    #map { position:absolute; top:0; right:0; bottom:0; left:280px; }
-
-    /* Panel lateral de mediciones */
-    .measure-panel {
-      position:absolute;
-      top:0; left:0; bottom:0;
-      width:280px;
-      background:#f7f8fb;
-      border-right:1px solid #dde1eb;
-      padding:12px 10px;
-      box-sizing:border-box;
-      overflow-y:auto;
-      z-index:2000;
-    }
-    .measure-panel h3 {
-      margin:0 0 8px;
-      font-size:13px;
-      letter-spacing:1px;
-      color:#555;
-    }
-    .measure-card {
-      background:#fff;
-      border-radius:6px;
-      border:1px solid #e0e4ef;
-      padding:8px 10px;
-      margin-bottom:8px;
-      font-size:12px;
-      box-shadow:0 1px 2px rgba(0,0,0,0.06);
-      position:relative;
-    }
-    .measure-title {
-      font-size:11px;
-      font-weight:600;
-      color:#1f4fa3;
-      margin-bottom:2px;
-      text-transform:uppercase;
-    }
-    .measure-delete {
-      position:absolute;
-      top:6px;
-      right:8px;
-      cursor:pointer;
-      color:#d44;
-      font-size:14px;
-    }
-
-    /* Barra de herramientas arriba del mapa */
-    .tool-panel {
-      position:absolute;
-      top:10px;
-      left:300px;
-      z-index:2500;
-      display:flex;
-      gap:6px;
-    }
-    .tool-btn {
-      background:#ffffff;
-      border-radius:18px;
-      border:1px solid #c0cfd9;
-      padding:6px 14px;
-      font-size:13px;
-      cursor:pointer;
-      color:#333;
-      box-shadow:0 1px 2px rgba(0,0,0,0.25);
-    }
-    .tool-btn.active {
-      background:#e6f0ff;
-      border-color:#2b73ff;
-      color:#2b73ff;
-    }
+    #map { height:100vh; width:100vw; }
   </style>
 </head>
 <body>
 
-<div class="measure-panel">
-  <h3>MEDICIONES (<span id="measure-count">0</span>)</h3>
-  <div id="measure-list"></div>
-</div>
-
-<div class="tool-panel">
-  <button id="btn-area" class="tool-btn active">Área</button>
-  <button id="btn-dist" class="tool-btn">Distancia</button>
-  <button id="btn-point" class="tool-btn">Punto</button>
-</div>
-
 <div id="map"></div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="https://unpkg.com/@geoman-io/leaflet-geoman-free@latest/dist/leaflet-geoman.min.js"></script>
+<script src="https://unpkg.com/leaflet-measure/dist/leaflet-measure.min.js"></script>
 
 <script>
-  // Mapa base
-  var map = L.map('map').setView([-33.4489,-70.6693], 15);
+  // Crear mapa
+  var map = L.map('map').setView([-20.351387, -69.721985], 19);
 
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    maxZoom: 19
+  // Ortofoto base (deja tu capa Google o XYZ aquí)
+  L.tileLayer('https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
+    maxZoom: 23
   }).addTo(map);
 
-  // Activar Geoman
-  map.pm.addControls({
-    position:'topleft',
-    drawCircle:false,
-    drawMarker:false,
-    drawCircleMarker:false,
-    drawRectangle:false,
-    drawText:false
-  });
-
-  map.pm.setGlobalOptions({
-    measurement:{ measurement:true, displayFormat:'metric' },
-    tooltips:true
-  });
-
-  // --------- Herramientas ---------
-  var currentTool = null;
-
-  function clearDrawingMode() {
-    map.pm.disableDraw('Polygon');
-    map.pm.disableDraw('Line');
-    map.pm.disableDraw('Marker');
-  }
-
-  function setTool(tool){
-    currentTool = tool;
-    document.querySelectorAll('.tool-btn').forEach(function(b){ b.classList.remove('active'); });
-    clearDrawingMode();
-
-    if (tool==='area'){
-      document.getElementById('btn-area').classList.add('active');
-      map.pm.enableDraw('Polygon', {
-        snappable:true,
-        allowSelfIntersection:false,
-        tooltips:true,
-        measurement:{ measurement:true, displayFormat:'metric' }
-      });
-    } else if (tool==='dist'){
-      document.getElementById('btn-dist').classList.add('active');
-      map.pm.enableDraw('Line', {
-        snappable:true,
-        tooltips:true,
-        measurement:{ measurement:true, displayFormat:'metric' }
-      });
-    } else if (tool==='point'){
-      document.getElementById('btn-point').classList.add('active');
-      map.pm.enableDraw('Marker', {
-        tooltips:true,
-        measurement:{ measurement:true, coordinates:true }
-      });
-    }
-  }
-
-  document.getElementById('btn-area').onclick  = function(){ setTool('area'); };
-  document.getElementById('btn-dist').onclick  = function(){ setTool('dist'); };
-  document.getElementById('btn-point').onclick = function(){ setTool('point'); };
-
-  setTool('area');
-
-  // --------- Panel de mediciones ---------
-  var measureList = document.getElementById('measure-list');
-  var measureCountSpan = document.getElementById('measure-count');
-
-  function updateMeasureCount(){
-    measureCountSpan.textContent = measureList.children.length;
-  }
-
-  function addMeasureCard(type, htmlText, layer){
-    var card = document.createElement('div');
-    card.className = 'measure-card';
-
-    var title = document.createElement('div');
-    title.className = 'measure-title';
-    title.textContent = type;
-    card.appendChild(title);
-
-    var body = document.createElement('div');
-    body.innerHTML = htmlText;
-    card.appendChild(body);
-
-    var del = document.createElement('span');
-    del.className = 'measure-delete';
-    del.innerHTML = '&times;';
-    del.onclick = function(){
-      map.removeLayer(layer);
-      measureList.removeChild(card);
-      updateMeasureCount();
-    };
-    card.appendChild(del);
-
-    measureList.appendChild(card);
-    updateMeasureCount();
-  }
-
-  // Cuando se termina de dibujar una geometría
-  map.on('pm:create', function(e){
-    var layer = e.layer;
-    var meas = L.PM.Utils.getMeasurements(layer, map, 'metric'); // área, length, coords [web:13]
-
-    if (layer instanceof L.Polygon && meas.area){
-      var txt = (meas.area).toFixed(2) + ' m²';
-      addMeasureCard('DISTANCIA'.replace('DISTANCIA','ÁREA'), txt, layer);
-    } else if (layer instanceof L.Polyline && meas.length){
-      var txt2 = (meas.length).toFixed(2) + ' m';
-      addMeasureCard('DISTANCIA', txt2, layer);
-    } else if (layer instanceof L.Marker && meas.coordinates){
-      var c = meas.coordinates;
-      var txt3 = 'Lat: ' + c.lat.toFixed(6) + '<br>Lng: ' + c.lng.toFixed(6);
-      addMeasureCard('PUNTO', txt3, layer);
-    }
-  });
+  // ---- Control de medición Leaflet.Measure ----
+  L.control.measure({
+    position: 'topleft',
+    primaryLengthUnit: 'meters',
+    secondaryLengthUnit: 'kilometers',
+    primaryAreaUnit: 'sqmeters',
+    secondaryAreaUnit: 'hectares',
+    activeColor: '#2b73ff',
+    completedColor: '#2b73ff'
+  }).addTo(map);
 </script>
 </body>
 </html>
