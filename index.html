@@ -26,14 +26,14 @@
             top: 15px;
             right: 15px;
             z-index: 2500;
-            width: 80px; /* ajusta tamaño */
+            width: 80px;
             pointer-events: none;
         }
 
         /* panel vertical de herramientas debajo del logo */
         .tool-panel {
             position: absolute;
-            top: 105px;      /* debajo del logo; ajusta si hace falta */
+            top: 105px;
             right: 20px;
             z-index: 2500;
             display: flex;
@@ -124,23 +124,25 @@
     var map = L.map('map', { zoomControl: false, minZoom: 18, maxZoom: 23 })
               .setView([-20.351387, -69.721985], 19);
 
-    // Activar controles y mediciones de Geoman
-    map.pm.addControls({
-        position: 'topleft',
-        drawCircle: false,
-        drawMarker: false,
-        drawCircleMarker: false,
-        drawRectangle: false,
-        drawText: false
-    });
+    // Activar Geoman (si está cargado correctamente)
+    if (map.pm) {
+        map.pm.addControls({
+            position: 'topleft',
+            drawCircle: false,
+            drawMarker: false,
+            drawCircleMarker: false,
+            drawRectangle: false,
+            drawText: false
+        });
 
-    map.pm.setGlobalOptions({
-        measurement: {
-            measurement: true,
-            displayFormat: 'metric'
-        },
-        tooltips: true
-    });
+        map.pm.setGlobalOptions({
+            measurement: {
+                measurement: true,
+                displayFormat: 'metric'
+            },
+            tooltips: true
+        });
+    }
 
     // Ortofoto base de Google
     L.tileLayer('https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
@@ -223,6 +225,7 @@
     var currentTool = null;
 
     function clearDrawingMode() {
+        if (!map.pm) return;
         map.pm.disableDraw('Polygon');
         map.pm.disableDraw('Line');
         map.pm.disableDraw('Marker');
@@ -231,7 +234,6 @@
     function setTool(tool) {
         currentTool = tool;
 
-        // estado visual de botones
         document.querySelectorAll('.tool-btn').forEach(function(btn) {
             btn.classList.remove('active');
         });
@@ -240,34 +242,40 @@
 
         if (tool === 'area') {
             document.getElementById('btn-area').classList.add('active');
-            map.pm.enableDraw('Polygon', {
-                snappable: true,
-                allowSelfIntersection: false,
-                tooltips: true,
-                measurement: {
-                    measurement: true,
-                    displayFormat: 'metric'
-                }
-            });
+            if (map.pm) {
+                map.pm.enableDraw('Polygon', {
+                    snappable: true,
+                    allowSelfIntersection: false,
+                    tooltips: true,
+                    measurement: {
+                        measurement: true,
+                        displayFormat: 'metric'
+                    }
+                });
+            }
         } else if (tool === 'dist') {
             document.getElementById('btn-dist').classList.add('active');
-            map.pm.enableDraw('Line', {
-                snappable: true,
-                tooltips: true,
-                measurement: {
-                    measurement: true,
-                    displayFormat: 'metric'
-                }
-            });
+            if (map.pm) {
+                map.pm.enableDraw('Line', {
+                    snappable: true,
+                    tooltips: true,
+                    measurement: {
+                        measurement: true,
+                        displayFormat: 'metric'
+                    }
+                });
+            }
         } else if (tool === 'point') {
             document.getElementById('btn-point').classList.add('active');
-            map.pm.enableDraw('Marker', {
-                tooltips: true,
-                measurement: {
-                    measurement: true,
-                    coordinates: true
-                }
-            });
+            if (map.pm) {
+                map.pm.enableDraw('Marker', {
+                    tooltips: true,
+                    measurement: {
+                        measurement: true,
+                        coordinates: true
+                    }
+                });
+            }
         }
     }
 
@@ -276,26 +284,28 @@
     document.getElementById('btn-point').onclick = function() { setTool('point'); };
 
     // Popup con m², distancia o coordenadas al finalizar el dibujo
-    map.on('pm:create', function(e) {
-        var layer = e.layer;
-        var meas = L.PM.Utils.getMeasurements(layer, map, 'metric'); // área, longitud, coords
+    if (map.pm) {
+        map.on('pm:create', function(e) {
+            var layer = e.layer;
+            var meas = L.PM.Utils.getMeasurements(layer, map, 'metric');
 
-        var content = '';
+            var content = '';
 
-        if (layer instanceof L.Polygon && meas.area) {
-            content = 'Área: ' + meas.area.toFixed(2) + ' m²';
-        } else if (layer instanceof L.Polyline && meas.length) {
-            content = 'Distancia: ' + meas.length.toFixed(2) + ' m';
-        } else if (layer instanceof L.Marker && meas.coordinates) {
-            content =
-                'Lat: ' + meas.coordinates.lat.toFixed(6) +
-                '<br>Lng: ' + meas.coordinates.lng.toFixed(6);
-        }
+            if (layer instanceof L.Polygon && meas.area) {
+                content = 'Área: ' + meas.area.toFixed(2) + ' m²';
+            } else if (layer instanceof L.Polyline && meas.length) {
+                content = 'Distancia: ' + meas.length.toFixed(2) + ' m';
+            } else if (layer instanceof L.Marker && meas.coordinates) {
+                content =
+                    'Lat: ' + meas.coordinates.lat.toFixed(6) +
+                    '<br>Lng: ' + meas.coordinates.lng.toFixed(6);
+            }
 
-        if (content) {
-            layer.bindPopup(content).openPopup();
-        }
-    });
+            if (content) {
+                layer.bindPopup(content).openPopup();
+            }
+        });
+    }
 </script>
 </body>
 </html>
