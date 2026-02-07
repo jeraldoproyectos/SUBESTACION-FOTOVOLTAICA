@@ -1,0 +1,92 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta http-equiv="content-type" content="text/html; charset=utf-8"/>
+    <title>09012026 (Google Maps Export from Global Mapper)</title>
+    <script type="text/javascript" src="http://maps.google.com/maps/api/js?sensor=false"></script>
+    <script type="text/javascript">
+
+    var G = google.maps;
+    var map;
+    
+    var customMapType = new G.ImageMapType
+      (
+        {
+        getTileUrl: function(coord, zoom)
+          {
+          var normalizedCoord = getNormalizedCoord(coord, zoom);
+          if (!normalizedCoord) { return null; }
+          
+          if ( zoom == 18 && normalizedCoord.x >= 80301 && normalizedCoord.x <= 80302 && normalizedCoord.y >= 146212 && normalizedCoord.y <= 146213 )
+          {
+            return "file:///C://Users//JERTOP//Desktop//LINEA%20DE%20TIEMPO//Z" + zoom + "/" + normalizedCoord.y + "/" + normalizedCoord.x + ".png"; // replace that with a "real" URL
+          }
+          else if ( zoom == 19 && normalizedCoord.x >= 160602 && normalizedCoord.x <= 160605 && normalizedCoord.y >= 292425 && normalizedCoord.y <= 292427 )
+          {
+            return "file:///C://Users//JERTOP//Desktop//LINEA%20DE%20TIEMPO//Z" + zoom + "/" + normalizedCoord.y + "/" + normalizedCoord.x + ".png"; // replace that with a "real" URL
+          }
+          else if ( zoom == 20 && normalizedCoord.x >= 321205 && normalizedCoord.x <= 321210 && normalizedCoord.y >= 584850 && normalizedCoord.y <= 584855 )
+          {
+            return "file:///C://Users//JERTOP//Desktop//LINEA%20DE%20TIEMPO//Z" + zoom + "/" + normalizedCoord.y + "/" + normalizedCoord.x + ".png"; // replace that with a "real" URL
+          }
+          else if ( zoom == 21 && normalizedCoord.x >= 642410 && normalizedCoord.x <= 642421 && normalizedCoord.y >= 1169700 && normalizedCoord.y <= 1169711 )
+          {
+            return "file:///C://Users//JERTOP//Desktop//LINEA%20DE%20TIEMPO//Z" + zoom + "/" + normalizedCoord.y + "/" + normalizedCoord.x + ".png"; // replace that with a "real" URL
+          }
+          else if ( zoom == 22 && normalizedCoord.x >= 1284820 && normalizedCoord.x <= 1284843 && normalizedCoord.y >= 2339401 && normalizedCoord.y <= 2339423 )
+          {
+            return "file:///C://Users//JERTOP//Desktop//LINEA%20DE%20TIEMPO//Z" + zoom + "/" + normalizedCoord.y + "/" + normalizedCoord.x + ".png"; // replace that with a "real" URL
+          }
+          return null;
+        },
+
+        alt: "09012026",
+        tileSize: new G.Size(256, 256),
+        isPng: true,
+        maxZoom: 22,
+        minZoom: 18,
+        opacity: 1.00,
+        name: "09012026"
+      }
+    )
+
+    function getNormalizedCoord(coord, zoom)
+    {
+      var y = coord.y;
+      var x = coord.x;
+      
+      var tileRange = 1 << zoom;
+      
+      if (y < 0 || y >= tileRange) { return null; }
+      if (x < 0 || x >= tileRange)
+      {
+        x = (x % tileRange + tileRange) % tileRange;
+      }
+      
+      return { x: x, y: y };
+    }
+
+    function initialize()
+    {
+      var myLatlng = new G.LatLng(-20.351065,-69.721985);
+      var myOptions = {
+        center: myLatlng,
+        zoom: 18,
+        mapTypeId: G.MapTypeId.ROADMAP,
+        mapTypeControl: true,
+        overviewMapControl: false,
+        scaleControl: false,
+        streetViewControl: true,
+        panControl: true,
+        zoomControl: true,
+        zoomControlOptions: { style: google.maps.ZoomControlStyle.DEFAULT }
+      };
+      
+      map = new G.Map(document.getElementById("map_canvas"), myOptions);
+      map.overlayMapTypes.insertAt(0, customMapType);
+    }
+    </script>
+</head>
+<body onload="initialize()">
+<div id="map_canvas" style="width: 100%; height: 800px; margin: 0px 0px 0px 0px; float: middle;"></div>
+</body> </html>
