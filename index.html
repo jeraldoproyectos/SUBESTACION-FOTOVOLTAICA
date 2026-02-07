@@ -7,8 +7,8 @@
   <!-- Leaflet -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 
-  <!-- Leaflet.Measure -->
-  <link rel="stylesheet" href="https://unpkg.com/leaflet-measure/dist/leaflet-measure.css" />
+  <!-- Leaflet.Measure (CDN compatible) -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet-measure@3.3.0/dist/leaflet-measure.css" />
 
   <style>
     body { margin:0; padding:0; font-family:'Segoe UI',sans-serif; }
@@ -20,18 +20,18 @@
 <div id="map"></div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="https://unpkg.com/leaflet-measure/dist/leaflet-measure.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/leaflet-measure@3.3.0/dist/leaflet-measure.min.js"></script>
 
 <script>
   // Crear mapa
   var map = L.map('map').setView([-20.351387, -69.721985], 19);
 
-  // Ortofoto base (deja tu capa Google o XYZ aquí)
+  // Ortofoto base
   L.tileLayer('https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
     maxZoom: 23
   }).addTo(map);
 
-  // ---- Control de medición Leaflet.Measure ----
+  // Control de medición
   L.control.measure({
     position: 'topleft',
     primaryLengthUnit: 'meters',
