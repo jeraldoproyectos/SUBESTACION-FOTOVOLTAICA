@@ -13,6 +13,15 @@
             width: 150px; filter: drop-shadow(0 2px 5px rgba(0,0,0,0.7));
             pointer-events: none;
         }
+        /* nuevo logo en la esquina superior derecha */
+.corner-logo {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    z-index: 2500;
+    width: 80px; /* ajusta tamaño */
+    pointer-events: none;
+}
 
         .ui-container {
             position: absolute; bottom: 25px; left: 50%; transform: translateX(-50%);
@@ -46,13 +55,16 @@
 <!-- Cuando tengas el logo final, reemplaza "logo.jpg" por la ruta correcta -->
 <img src="logo.jpg" class="brand-logo" alt="Logo SUBESTACION FOTOVOLTAICA">
 
+<!-- nuevo logo en la esquina superior derecha -->
+<img src="pngegg.png" class="corner-logo" alt="Logo esquina">
+
 <div id="map"></div>
 
 <div class="ui-container">
     <div class="utm-box" id="utm-coord">E: --- | N: ---</div>
     <div class="slider-wrapper">
         <div id="fecha-label" class="current-date-label">CARGANDO...</div>
-        <input type="range" id="smooth-slider" min="0" value="0" step="1">
+        <input type="range" id="smooth-slider" min="0" value="0" step="1">        
     </div>
 </div>
 
