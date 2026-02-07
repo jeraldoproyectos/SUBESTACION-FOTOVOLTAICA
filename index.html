@@ -43,7 +43,6 @@
 </head>
 <body>
 
-<!-- Cuando tengas el logo final, reemplaza "logo.jpg" por la ruta correcta -->
 <img src="logo.jpg" class="brand-logo" alt="Logo SUBESTACION FOTOVOLTAICA">
 
 <div id="map"></div>
@@ -60,59 +59,40 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.9.0/proj4.js"></script>
 
 <script>
-    // Proyecciones UTM 19S y WGS84
     var utm19S = "+proj=utm +zone=19 +south +datum=WGS84 +units=m +no_defs";
     var wgs84 = "+proj=longlat +datum=WGS84 +no_defs";
 
-    // Mapa base
     var map = L.map('map', { zoomControl: false, minZoom: 18, maxZoom: 23 })
               .setView([-20.351387, -69.721985], 19);
 
-    // Ortofoto base de Google (puedes cambiarla después si quieres usar solo tus ortofotos)
-// L.tileLayer('https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
-//     maxZoom: 23
-// }).addTo(map);
+    // (si quieres volver a usar Google de fondo, descomenta estas líneas)
+    // L.tileLayer('https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
+    //     maxZoom: 23
+    // }).addTo(map);
 
-    // Pane para el plano (fundaciones)
     map.createPane('planoPane');
     map.getPane('planoPane').style.zIndex = 1000;
     map.getPane('planoPane').style.pointerEvents = 'none';
 
-    // Coordenadas de la imagen de fundaciones (ajusta si cambias el plano)
     var imageBounds = [
-        [-20.3519680745, -69.7226506296], // Sur-Oeste
-        [-20.3506811321, -69.7212255524]  // Norte-Este
+        [-20.3519680745, -69.7226506296],
+        [-20.3506811321, -69.7212255524]
     ];
 
-        // Pane para el plano (fundaciones)
-    map.createPane('planoPane');
-    map.getPane('planoPane').style.zIndex = 1000;
-    map.getPane('planoPane').style.pointerEvents = 'none';
-
-    // Coordenadas de la imagen de fundaciones (ajusta si cambias el plano)
-    var imageBounds = [
-        [-20.3519680745, -69.7226506296], // Sur-Oeste
-        [-20.3506811321, -69.7212255524]  // Norte-Este
-    ];
-
-    // Plano de fundaciones
     L.imageOverlay('fundaciones.png', imageBounds, {
         pane: 'planoPane',
         opacity: 0.9,
         interactive: false
     }).addTo(map);
 
-    // Coordenadas UTM bajo el mouse
     map.on('mousemove', function(e) {
         var p = proj4(wgs84, utm19S, [e.latlng.lng, e.latlng.lat]);
         document.getElementById('utm-coord').innerHTML =
             'E: ' + p[0].toFixed(2) + ' | N: ' + p[1].toFixed(2);
     });
 
-    // Fechas de tus ortofotos
     var fechas = ["03/12/2025", "09/01/2026", "21/01/2026", "23/01/2026", "28/01/2026"];
 
-    // Capas raster tipo XYZ
     var capas = [
         L.tileLayer('03122025/Z{z}/{x}/{y}.png', { maxZoom: 23, opacity: 1 }).addTo(map),
         L.tileLayer('09012026/Z{z}/{x}/{y}.png', { maxZoom: 23, opacity: 0 }).addTo(map),
@@ -121,7 +101,6 @@
         L.tileLayer('28012026/Z{z}/{x}/{y}.png', { maxZoom: 23, opacity: 0 }).addTo(map)
     ];
 
-    // Slider para transición suave entre fechas
     var slider = document.getElementById('smooth-slider');
     var label = document.getElementById('fecha-label');
     slider.max = (capas.length - 1) * 100;
