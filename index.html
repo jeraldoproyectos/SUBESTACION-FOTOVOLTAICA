@@ -3,13 +3,7 @@
 <head>
     <title>SUBESTACION FOTOVOLTAICA</title>
     <meta charset="utf-8" />
-
-    <!-- Leaflet -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-
-    <!-- Leaflet-Geoman (mediciones) -->
-    <link rel="stylesheet" href="https://unpkg.com/@geoman-io/leaflet-geoman-free@latest/dist/leaflet-geoman.css" />
-
     <style>
         body { margin: 0; padding: 0; background: #1a1a1a; font-family: 'Segoe UI', sans-serif; overflow: hidden; }
         #map { height: 100vh; width: 100%; cursor: crosshair; }
@@ -19,42 +13,15 @@
             width: 150px; filter: drop-shadow(0 2px 5px rgba(0,0,0,0.7));
             pointer-events: none;
         }
-
-        .corner-logo {
-            position: absolute;
-            top: 15px;
-            right: 15px;
-            z-index: 2500;
-            width: 80px;
-            pointer-events: none;
-        }
-
-        .tool-panel {
-            position: absolute;
-            top: 105px;
-            right: 20px;
-            z-index: 2500;
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-        }
-
-        .tool-btn {
-            background: #ffffff;
-            border-radius: 18px;
-            border: 1px solid #c0cfd9;
-            padding: 6px 14px;
-            font-size: 13px;
-            cursor: pointer;
-            color: #333;
-            box-shadow: 0 1px 2px rgba(0,0,0,0.25);
-        }
-
-        .tool-btn.active {
-            background: #e6f0ff;
-            border-color: #2b73ff;
-            color: #2b73ff;
-        }
+        /* nuevo logo en la esquina superior derecha */
+.corner-logo {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    z-index: 2500;
+    width: 80px; /* ajusta tamaño */
+    pointer-events: none;
+}
 
         .ui-container {
             position: absolute; bottom: 25px; left: 50%; transform: translateX(-50%);
@@ -85,14 +52,11 @@
 </head>
 <body>
 
+<!-- Cuando tengas el logo final, reemplaza "logo.jpg" por la ruta correcta -->
 <img src="logo.jpg" class="brand-logo" alt="Logo SUBESTACION FOTOVOLTAICA">
-<img src="pngegg.png" class="corner-logo" alt="Logo esquina">
 
-<div class="tool-panel">
-    <button id="btn-area" class="tool-btn active">Área</button>
-    <button id="btn-dist" class="tool-btn">Distancia</button>
-    <button id="btn-point" class="tool-btn">Punto</button>
-</div>
+<!-- nuevo logo en la esquina superior derecha -->
+<img src="pngegg.png" class="corner-logo" alt="Logo esquina">
 
 <div id="map"></div>
 
@@ -106,7 +70,6 @@
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.9.0/proj4.js"></script>
-<script src="https://unpkg.com/@geoman-io/leaflet-geoman-free@latest/dist/leaflet-geoman.min.js"></script>
 
 <script>
     // Proyecciones UTM 19S y WGS84
@@ -117,57 +80,40 @@
     var map = L.map('map', { zoomControl: false, minZoom: 18, maxZoom: 23 })
               .setView([-20.351387, -69.721985], 19);
 
-    // Activar Geoman
-    map.pm.addControls({
-        position: 'topleft',
-        drawCircle: false,
-        drawMarker: false,
-        drawCircleMarker: false,
-        drawRectangle: false,
-        drawText: false
-    });
-
-    map.pm.setGlobalOptions({
-        measurement: {
-            measurement: true,
-            displayFormat: 'metric'
-        },
-        tooltips: true
-    });
-
-    // Ortofoto base
+    // Ortofoto base de Google (puedes cambiarla después si quieres usar solo tus ortofotos)
     L.tileLayer('https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
         maxZoom: 23
     }).addTo(map);
 
-    // Pane plano
+    // Pane para el plano (fundaciones)
     map.createPane('planoPane');
     map.getPane('planoPane').style.zIndex = 1000;
     map.getPane('planoPane').style.pointerEvents = 'none';
 
-    // Imagen plano
+    // Coordenadas de la imagen de fundaciones (ajusta si cambias el plano)
     var imageBounds = [
-        [-20.3519680745, -69.7226506296],
-        [-20.3506811321, -69.7212255524]
+        [-20.3519680745, -69.7226506296], // Sur-Oeste
+        [-20.3506811321, -69.7212255524]  // Norte-Este
     ];
 
+    // Plano de fundaciones (cuando tengas la imagen final, reemplaza 'fundaciones.png')
     L.imageOverlay('fundaciones.png', imageBounds, {
         pane: 'planoPane',
         opacity: 0.9,
         interactive: false
     }).addTo(map);
 
-    // UTM bajo el mouse (valor por defecto)
+    // Coordenadas UTM bajo el mouse
     map.on('mousemove', function(e) {
         var p = proj4(wgs84, utm19S, [e.latlng.lng, e.latlng.lat]);
         document.getElementById('utm-coord').innerHTML =
             'E: ' + p[0].toFixed(2) + ' | N: ' + p[1].toFixed(2);
     });
 
-    // Fechas ortofotos
+    // Fechas de tus ortofotos (puedes editar estos textos)
     var fechas = ["03/12/2025", "09/01/2026", "21/01/2026", "23/01/2026", "28/01/2026"];
 
-    // Capas raster
+    // Capas raster tipo XYZ (ajusta las rutas cuando tengas las carpetas listas)
     var capas = [
         L.tileLayer('03122025/Z{z}/{y}/{x}.png', { maxZoom: 23, opacity: 1 }).addTo(map),
         L.tileLayer('09012026/Z{z}/{y}/{x}.png', { maxZoom: 23, opacity: 0 }).addTo(map),
@@ -176,6 +122,7 @@
         L.tileLayer('28012026/Z{z}/{y}/{x}.png', { maxZoom: 23, opacity: 0 }).addTo(map)
     ];
 
+    // Slider para transición suave entre fechas
     var slider = document.getElementById('smooth-slider');
     var label = document.getElementById('fecha-label');
     slider.max = (capas.length - 1) * 100;
@@ -209,87 +156,6 @@
     });
 
     updateView();
-
-    // ---------------- Herramientas Área / Distancia / Punto ----------------
-    var currentTool = null;
-
-    function clearDrawingMode() {
-        map.pm.disableDraw('Polygon');
-        map.pm.disableDraw('Line');
-        map.pm.disableDraw('Marker');
-    }
-
-    function setTool(tool) {
-        currentTool = tool;
-
-        document.querySelectorAll('.tool-btn').forEach(function(btn) {
-            btn.classList.remove('active');
-        });
-
-        clearDrawingMode();
-
-        if (tool === 'area') {
-            document.getElementById('btn-area').classList.add('active');
-            map.pm.enableDraw('Polygon', {
-                snappable: true,
-                allowSelfIntersection: false,
-                tooltips: true,
-                measurement: {
-                    measurement: true,
-                    displayFormat: 'metric'
-                }
-            });
-        } else if (tool === 'dist') {
-            document.getElementById('btn-dist').classList.add('active');
-            map.pm.enableDraw('Line', {
-                snappable: true,
-                tooltips: true,
-                measurement: {
-                    measurement: true,
-                    displayFormat: 'metric'
-                }
-            });
-        } else if (tool === 'point') {
-            document.getElementById('btn-point').classList.add('active');
-            map.pm.enableDraw('Marker', {
-                tooltips: true,
-                measurement: {
-                    measurement: true,
-                    coordinates: true
-                }
-            });
-        }
-    }
-
-    document.getElementById('btn-area').onclick  = function() { setTool('area'); };
-    document.getElementById('btn-dist').onclick  = function() { setTool('dist'); };
-    document.getElementById('btn-point').onclick = function() { setTool('point'); };
-
-    // Mostrar mediciones en la caja inferior al terminar de dibujar
-    map.on('pm:create', function(e) {
-        var layer = e.layer;
-        var meas = L.PM.Utils.getMeasurements(layer, map, 'metric');
-
-        var texto = '';
-
-        if (layer instanceof L.Polygon && meas.area) {
-            texto = 'ÁREA: ' + meas.area.toFixed(2) + ' m²';
-        } else if (layer instanceof L.Polyline && meas.length) {
-            texto = 'DISTANCIA: ' + meas.length.toFixed(2) + ' m';
-        } else if (layer instanceof L.Marker && layer.getLatLng) {
-            var ll = layer.getLatLng();
-            var utm = proj4(wgs84, utm19S, [ll.lng, ll.lat]);
-            texto =
-                'PUNTO  Lat: ' + ll.lat.toFixed(6) +
-                '  Lng: ' + ll.lng.toFixed(6) +
-                '  |  E: ' + utm[0].toFixed(2) +
-                '  N: ' + utm[1].toFixed(2);
-        }
-
-        if (texto) {
-            document.getElementById('utm-coord').innerHTML = texto;
-        }
-    });
 </script>
 </body>
 </html>
