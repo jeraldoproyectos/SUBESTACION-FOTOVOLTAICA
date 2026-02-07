@@ -193,30 +193,83 @@
 
     updateView();
 
-    // ---------------- Herramientas Área / Distancia / Punto ----------------
-    var currentTool = 'area';
+// ---------------- Herramientas Área / Distancia / Punto ----------------
+var currentTool = null;
 
-    function setTool(tool) {
-        currentTool = tool;
-        document.querySelectorAll('.tool-btn').forEach(function(btn) {
-            btn.classList.remove('active');
+function clearDrawingMode() {
+    map.pm.disableDraw('Polygon');
+    map.pm.disableDraw('Line');
+    map.pm.disableDraw('Marker');
+}
+
+function setTool(tool) {
+    currentTool = tool;
+
+    // estado visual de botones
+    document.querySelectorAll('.tool-btn').forEach(function(btn) {
+        btn.classList.remove('active');
+    });
+
+    clearDrawingMode();
+
+    if (tool === 'area') {
+        document.getElementById('btn-area').classList.add('active');
+        map.pm.enableDraw('Polygon', {
+            snappable: true,
+            allowSelfIntersection: false,
+            tooltips: true,
+            measurement: {
+                measurement: true,
+                displayFormat: 'metric'
+            }
         });
-        if (tool === 'area')  document.getElementById('btn-area').classList.add('active');
-        if (tool === 'dist')  document.getElementById('btn-dist').classList.add('active');
-        if (tool === 'point') document.getElementById('btn-point').classList.add('active');
+    } else if (tool === 'dist') {
+        document.getElementById('btn-dist').classList.add('active');
+        map.pm.enableDraw('Line', {
+            snappable: true,
+            tooltips: true,
+            measurement: {
+                measurement: true,
+                displayFormat: 'metric'
+            }
+        });
+    } else if (tool === 'point') {
+        document.getElementById('btn-point').classList.add('active');
+        map.pm.enableDraw('Marker', {
+            tooltips: true,
+            measurement: {
+                measurement: true,
+                coordinates: true
+            }
+        });
+    }
+}
+
+document.getElementById('btn-area').onclick  = function() { setTool('area'); };
+document.getElementById('btn-dist').onclick  = function() { setTool('dist'); };
+document.getElementById('btn-point').onclick = function() { setTool('point'); };
+
+// Popup con m², distancia o coordenadas al finalizar
+map.on('pm:create', function(e) {
+    var layer = e.layer;
+    var meas = L.PM.Utils.getMeasurements(layer, map, 'metric'); // área, longitud, coords [web:13]
+
+    var content = '';
+
+    if (layer instanceof L.Polygon && meas.area) {
+        content = 'Área: ' + meas.area.toFixed(2) + ' m²';
+    } else if (layer instanceof L.Polyline && meas.length) {
+        content = 'Distancia: ' + meas.length.toFixed(2) + ' m';
+    } else if (layer instanceof L.Marker && meas.coordinates) {
+        content =
+            'Lat: ' + meas.coordinates.lat.toFixed(6) +
+            '<br>Lng: ' + meas.coordinates.lng.toFixed(6);
     }
 
-    document.getElementById('btn-area').onclick  = function() { setTool('area'); };
-    document.getElementById('btn-dist').onclick  = function() { setTool('dist'); };
-    document.getElementById('btn-point').onclick = function() { setTool('point'); };
-
-    // Ejemplo de uso del estado actual (para que pruebes que cambia)
-    map.on('click', function(e) {
-        if (currentTool === 'point') {
-            console.log('Punto en', e.latlng);
-            // aquí puedes agregar un marcador o tu lógica de medición
-        }
-    });
+    if (content) {
+        layer.bindPopup(content).openPopup();
+    }
+});
 </script>
 </body>
 </html>
