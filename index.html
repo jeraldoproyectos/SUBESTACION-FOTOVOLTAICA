@@ -2,16 +2,13 @@
 <html>
 <head>
   <meta charset="utf-8" />
-  <title>SUBESTACION FOTOVOLTAICA</title>
+  <title>Medición sencilla</title>
 
-  <!-- Leaflet -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-
-  <!-- Leaflet.Measure (CDN compatible) -->
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet-measure@3.3.0/dist/leaflet-measure.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet-ruler/dist/leaflet-ruler.css" />
 
   <style>
-    body { margin:0; padding:0; font-family:'Segoe UI',sans-serif; }
+    body { margin:0; padding:0; }
     #map { height:100vh; width:100vw; }
   </style>
 </head>
@@ -20,27 +17,35 @@
 <div id="map"></div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/leaflet-measure@3.3.0/dist/leaflet-measure.min.js"></script>
+<script src="https://unpkg.com/leaflet-ruler/dist/leaflet-ruler.min.js"></script>
 
 <script>
-  // Crear mapa
   var map = L.map('map').setView([-20.351387, -69.721985], 19);
 
-  // Ortofoto base
   L.tileLayer('https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
     maxZoom: 23
   }).addTo(map);
 
-  // Control de medición
-  L.control.measure({
+  // Herramienta de distancia muy simple
+  L.control.ruler({
     position: 'topleft',
-    primaryLengthUnit: 'meters',
-    secondaryLengthUnit: 'kilometers',
-    primaryAreaUnit: 'sqmeters',
-    secondaryAreaUnit: 'hectares',
-    activeColor: '#2b73ff',
-    completedColor: '#2b73ff'
+    lineColor: '#2b73ff',
+    lengthUnit: {
+      display: 'meters',
+      decimal: 2,
+      factor: 1
+    }
   }).addTo(map);
+
+  // Clic para punto: muestra lat/lon en popup
+  map.on('click', function(e){
+    var lat = e.latlng.lat.toFixed(6);
+    var lng = e.latlng.lng.toFixed(6);
+    L.marker(e.latlng)
+      .addTo(map)
+      .bindPopup('Lat: ' + lat + '<br>Lng: ' + lng)
+      .openPopup();
+  });
 </script>
 </body>
 </html>
