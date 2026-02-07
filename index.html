@@ -65,12 +65,22 @@
 var map = L.map('map', { zoomControl: false, minZoom: 18, maxZoom: 19 })
           .setView([-20.351387, -69.721985], 19);
 
-    // (si quieres volver a usar Google de fondo, descomenta estas líneas)
-    // L.tileLayer('https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
-    //     maxZoom: 23
-    // }).addTo(map);
+// Limitar el movimiento del mapa a la zona de la subestación
+var bounds = [
+    [-20.3523, -69.7230], // Sur-Oeste (ajusta si hace falta)
+    [-20.3503, -69.7209]  // Norte-Este
+];
+map.setMaxBounds(bounds);
+map.on('drag', function() {
+    map.panInsideBounds(bounds, { animate: false });
+});
 
-    map.createPane('planoPane');
+// (si quieres volver a usar Google de fondo, descomenta estas líneas)
+// L.tileLayer('https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
+//     maxZoom: 23
+// }).addTo(map);
+
+map.createPane('planoPane');
     map.getPane('planoPane').style.zIndex = 1000;
     map.getPane('planoPane').style.pointerEvents = 'none';
 
