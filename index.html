@@ -20,7 +20,6 @@
             pointer-events: none;
         }
 
-        /* nuevo logo en la esquina superior derecha */
         .corner-logo {
             position: absolute;
             top: 15px;
@@ -30,7 +29,6 @@
             pointer-events: none;
         }
 
-        /* panel vertical de herramientas debajo del logo */
         .tool-panel {
             position: absolute;
             top: 105px;
@@ -87,13 +85,9 @@
 </head>
 <body>
 
-<!-- logo inferior izquierdo -->
 <img src="logo.jpg" class="brand-logo" alt="Logo SUBESTACION FOTOVOLTAICA">
-
-<!-- logo esquina superior derecha -->
 <img src="pngegg.png" class="corner-logo" alt="Logo esquina">
 
-<!-- panel de herramientas debajo del logo -->
 <div class="tool-panel">
     <button id="btn-area" class="tool-btn active">Área</button>
     <button id="btn-dist" class="tool-btn">Distancia</button>
@@ -110,7 +104,6 @@
     </div>
 </div>
 
-<!-- JS -->
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.9.0/proj4.js"></script>
 <script src="https://unpkg.com/@geoman-io/leaflet-geoman-free@latest/dist/leaflet-geoman.min.js"></script>
@@ -124,60 +117,57 @@
     var map = L.map('map', { zoomControl: false, minZoom: 18, maxZoom: 23 })
               .setView([-20.351387, -69.721985], 19);
 
-    // Activar Geoman (si está cargado correctamente)
-    if (map.pm) {
-        map.pm.addControls({
-            position: 'topleft',
-            drawCircle: false,
-            drawMarker: false,
-            drawCircleMarker: false,
-            drawRectangle: false,
-            drawText: false
-        });
+    // Activar Geoman
+    map.pm.addControls({
+        position: 'topleft',
+        drawCircle: false,
+        drawMarker: false,
+        drawCircleMarker: false,
+        drawRectangle: false,
+        drawText: false
+    });
 
-        map.pm.setGlobalOptions({
-            measurement: {
-                measurement: true,
-                displayFormat: 'metric'
-            },
-            tooltips: true
-        });
-    }
+    map.pm.setGlobalOptions({
+        measurement: {
+            measurement: true,
+            displayFormat: 'metric'
+        },
+        tooltips: true
+    });
 
-    // Ortofoto base de Google
+    // Ortofoto base
     L.tileLayer('https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
         maxZoom: 23
     }).addTo(map);
 
-    // Pane para el plano (fundaciones)
+    // Pane plano
     map.createPane('planoPane');
     map.getPane('planoPane').style.zIndex = 1000;
     map.getPane('planoPane').style.pointerEvents = 'none';
 
-    // Coordenadas de la imagen de fundaciones
+    // Imagen plano
     var imageBounds = [
-        [-20.3519680745, -69.7226506296], // Sur-Oeste
-        [-20.3506811321, -69.7212255524]  // Norte-Este
+        [-20.3519680745, -69.7226506296],
+        [-20.3506811321, -69.7212255524]
     ];
 
-    // Plano de fundaciones
     L.imageOverlay('fundaciones.png', imageBounds, {
         pane: 'planoPane',
         opacity: 0.9,
         interactive: false
     }).addTo(map);
 
-    // Coordenadas UTM bajo el mouse
+    // UTM bajo el mouse (valor por defecto)
     map.on('mousemove', function(e) {
         var p = proj4(wgs84, utm19S, [e.latlng.lng, e.latlng.lat]);
         document.getElementById('utm-coord').innerHTML =
             'E: ' + p[0].toFixed(2) + ' | N: ' + p[1].toFixed(2);
     });
 
-    // Fechas de tus ortofotos
+    // Fechas ortofotos
     var fechas = ["03/12/2025", "09/01/2026", "21/01/2026", "23/01/2026", "28/01/2026"];
 
-    // Capas raster tipo XYZ
+    // Capas raster
     var capas = [
         L.tileLayer('03122025/Z{z}/{y}/{x}.png', { maxZoom: 23, opacity: 1 }).addTo(map),
         L.tileLayer('09012026/Z{z}/{y}/{x}.png', { maxZoom: 23, opacity: 0 }).addTo(map),
@@ -186,7 +176,6 @@
         L.tileLayer('28012026/Z{z}/{y}/{x}.png', { maxZoom: 23, opacity: 0 }).addTo(map)
     ];
 
-    // Slider para transición suave entre fechas
     var slider = document.getElementById('smooth-slider');
     var label = document.getElementById('fecha-label');
     slider.max = (capas.length - 1) * 100;
@@ -225,7 +214,6 @@
     var currentTool = null;
 
     function clearDrawingMode() {
-        if (!map.pm) return;
         map.pm.disableDraw('Polygon');
         map.pm.disableDraw('Line');
         map.pm.disableDraw('Marker');
@@ -242,40 +230,34 @@
 
         if (tool === 'area') {
             document.getElementById('btn-area').classList.add('active');
-            if (map.pm) {
-                map.pm.enableDraw('Polygon', {
-                    snappable: true,
-                    allowSelfIntersection: false,
-                    tooltips: true,
-                    measurement: {
-                        measurement: true,
-                        displayFormat: 'metric'
-                    }
-                });
-            }
+            map.pm.enableDraw('Polygon', {
+                snappable: true,
+                allowSelfIntersection: false,
+                tooltips: true,
+                measurement: {
+                    measurement: true,
+                    displayFormat: 'metric'
+                }
+            });
         } else if (tool === 'dist') {
             document.getElementById('btn-dist').classList.add('active');
-            if (map.pm) {
-                map.pm.enableDraw('Line', {
-                    snappable: true,
-                    tooltips: true,
-                    measurement: {
-                        measurement: true,
-                        displayFormat: 'metric'
-                    }
-                });
-            }
+            map.pm.enableDraw('Line', {
+                snappable: true,
+                tooltips: true,
+                measurement: {
+                    measurement: true,
+                    displayFormat: 'metric'
+                }
+            });
         } else if (tool === 'point') {
             document.getElementById('btn-point').classList.add('active');
-            if (map.pm) {
-                map.pm.enableDraw('Marker', {
-                    tooltips: true,
-                    measurement: {
-                        measurement: true,
-                        coordinates: true
-                    }
-                });
-            }
+            map.pm.enableDraw('Marker', {
+                tooltips: true,
+                measurement: {
+                    measurement: true,
+                    coordinates: true
+                }
+            });
         }
     }
 
@@ -283,29 +265,31 @@
     document.getElementById('btn-dist').onclick  = function() { setTool('dist'); };
     document.getElementById('btn-point').onclick = function() { setTool('point'); };
 
-    // Popup con m², distancia o coordenadas al finalizar el dibujo
-    if (map.pm) {
-        map.on('pm:create', function(e) {
-            var layer = e.layer;
-            var meas = L.PM.Utils.getMeasurements(layer, map, 'metric');
+    // Mostrar mediciones en la caja inferior al terminar de dibujar
+    map.on('pm:create', function(e) {
+        var layer = e.layer;
+        var meas = L.PM.Utils.getMeasurements(layer, map, 'metric');
 
-            var content = '';
+        var texto = '';
 
-            if (layer instanceof L.Polygon && meas.area) {
-                content = 'Área: ' + meas.area.toFixed(2) + ' m²';
-            } else if (layer instanceof L.Polyline && meas.length) {
-                content = 'Distancia: ' + meas.length.toFixed(2) + ' m';
-            } else if (layer instanceof L.Marker && meas.coordinates) {
-                content =
-                    'Lat: ' + meas.coordinates.lat.toFixed(6) +
-                    '<br>Lng: ' + meas.coordinates.lng.toFixed(6);
-            }
+        if (layer instanceof L.Polygon && meas.area) {
+            texto = 'ÁREA: ' + meas.area.toFixed(2) + ' m²';
+        } else if (layer instanceof L.Polyline && meas.length) {
+            texto = 'DISTANCIA: ' + meas.length.toFixed(2) + ' m';
+        } else if (layer instanceof L.Marker && layer.getLatLng) {
+            var ll = layer.getLatLng();
+            var utm = proj4(wgs84, utm19S, [ll.lng, ll.lat]);
+            texto =
+                'PUNTO  Lat: ' + ll.lat.toFixed(6) +
+                '  Lng: ' + ll.lng.toFixed(6) +
+                '  |  E: ' + utm[0].toFixed(2) +
+                '  N: ' + utm[1].toFixed(2);
+        }
 
-            if (content) {
-                layer.bindPopup(content).openPopup();
-            }
-        });
-    }
+        if (texto) {
+            document.getElementById('utm-coord').innerHTML = texto;
+        }
+    });
 </script>
 </body>
 </html>
