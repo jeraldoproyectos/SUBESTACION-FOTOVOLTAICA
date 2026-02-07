@@ -13,15 +13,44 @@
             width: 150px; filter: drop-shadow(0 2px 5px rgba(0,0,0,0.7));
             pointer-events: none;
         }
+
         /* nuevo logo en la esquina superior derecha */
-.corner-logo {
-    position: absolute;
-    top: 15px;
-    right: 15px;
-    z-index: 2500;
-    width: 80px; /* ajusta tamaño */
-    pointer-events: none;
-}
+        .corner-logo {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            z-index: 2500;
+            width: 80px; /* ajusta tamaño */
+            pointer-events: none;
+        }
+
+        /* panel vertical de herramientas debajo del logo */
+        .tool-panel {
+            position: absolute;
+            top: 105px;      /* debajo del logo; ajusta si hace falta */
+            right: 20px;
+            z-index: 2500;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .tool-btn {
+            background: #ffffff;
+            border-radius: 18px;
+            border: 1px solid #c0cfd9;
+            padding: 6px 14px;
+            font-size: 13px;
+            cursor: pointer;
+            color: #333;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.25);
+        }
+
+        .tool-btn.active {
+            background: #e6f0ff;
+            border-color: #2b73ff;
+            color: #2b73ff;
+        }
 
         .ui-container {
             position: absolute; bottom: 25px; left: 50%; transform: translateX(-50%);
@@ -58,6 +87,13 @@
 <!-- nuevo logo en la esquina superior derecha -->
 <img src="pngegg.png" class="corner-logo" alt="Logo esquina">
 
+<!-- panel de herramientas debajo del logo -->
+<div class="tool-panel">
+    <button id="btn-area" class="tool-btn active">Área</button>
+    <button id="btn-dist" class="tool-btn">Distancia</button>
+    <button id="btn-point" class="tool-btn">Punto</button>
+</div>
+
 <div id="map"></div>
 
 <div class="ui-container">
@@ -80,7 +116,7 @@
     var map = L.map('map', { zoomControl: false, minZoom: 18, maxZoom: 23 })
               .setView([-20.351387, -69.721985], 19);
 
-    // Ortofoto base de Google (puedes cambiarla después si quieres usar solo tus ortofotos)
+    // Ortofoto base de Google
     L.tileLayer('https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
         maxZoom: 23
     }).addTo(map);
@@ -90,13 +126,13 @@
     map.getPane('planoPane').style.zIndex = 1000;
     map.getPane('planoPane').style.pointerEvents = 'none';
 
-    // Coordenadas de la imagen de fundaciones (ajusta si cambias el plano)
+    // Coordenadas de la imagen de fundaciones
     var imageBounds = [
         [-20.3519680745, -69.7226506296], // Sur-Oeste
         [-20.3506811321, -69.7212255524]  // Norte-Este
     ];
 
-    // Plano de fundaciones (cuando tengas la imagen final, reemplaza 'fundaciones.png')
+    // Plano de fundaciones
     L.imageOverlay('fundaciones.png', imageBounds, {
         pane: 'planoPane',
         opacity: 0.9,
@@ -110,10 +146,10 @@
             'E: ' + p[0].toFixed(2) + ' | N: ' + p[1].toFixed(2);
     });
 
-    // Fechas de tus ortofotos (puedes editar estos textos)
+    // Fechas de tus ortofotos
     var fechas = ["03/12/2025", "09/01/2026", "21/01/2026", "23/01/2026", "28/01/2026"];
 
-    // Capas raster tipo XYZ (ajusta las rutas cuando tengas las carpetas listas)
+    // Capas raster tipo XYZ
     var capas = [
         L.tileLayer('03122025/Z{z}/{y}/{x}.png', { maxZoom: 23, opacity: 1 }).addTo(map),
         L.tileLayer('09012026/Z{z}/{y}/{x}.png', { maxZoom: 23, opacity: 0 }).addTo(map),
@@ -156,6 +192,31 @@
     });
 
     updateView();
+
+    // ---------------- Herramientas Área / Distancia / Punto ----------------
+    var currentTool = 'area';
+
+    function setTool(tool) {
+        currentTool = tool;
+        document.querySelectorAll('.tool-btn').forEach(function(btn) {
+            btn.classList.remove('active');
+        });
+        if (tool === 'area')  document.getElementById('btn-area').classList.add('active');
+        if (tool === 'dist')  document.getElementById('btn-dist').classList.add('active');
+        if (tool === 'point') document.getElementById('btn-point').classList.add('active');
+    }
+
+    document.getElementById('btn-area').onclick  = function() { setTool('area'); };
+    document.getElementById('btn-dist').onclick  = function() { setTool('dist'); };
+    document.getElementById('btn-point').onclick = function() { setTool('point'); };
+
+    // Ejemplo de uso del estado actual (para que pruebes que cambia)
+    map.on('click', function(e) {
+        if (currentTool === 'point') {
+            console.log('Punto en', e.latlng);
+            // aquí puedes agregar un marcador o tu lógica de medición
+        }
+    });
 </script>
 </body>
 </html>
