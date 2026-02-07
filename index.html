@@ -62,8 +62,8 @@
     var utm19S = "+proj=utm +zone=19 +south +datum=WGS84 +units=m +no_defs";
     var wgs84 = "+proj=longlat +datum=WGS84 +no_defs";
 
-    var map = L.map('map', { zoomControl: false, minZoom: 18, maxZoom: 23 })
-              .setView([-20.351387, -69.721985], 19);
+var map = L.map('map', { zoomControl: false, minZoom: 18, maxZoom: 19 })
+          .setView([-20.351387, -69.721985], 19);
 
     // (si quieres volver a usar Google de fondo, descomenta estas líneas)
     // L.tileLayer('https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
@@ -93,13 +93,42 @@
 
     var fechas = ["03/12/2025", "09/01/2026", "21/01/2026", "23/01/2026", "28/01/2026"];
 
-    var capas = [
-        L.tileLayer('03122025/Z{z}/{x}/{y}.png', { maxZoom: 23, opacity: 1 }).addTo(map),
-        L.tileLayer('09012026/Z{z}/{x}/{y}.png', { maxZoom: 23, opacity: 0 }).addTo(map),
-        L.tileLayer('21012026/Z{z}/{x}/{y}.png', { maxZoom: 23, opacity: 0 }).addTo(map),
-        L.tileLayer('23012026/Z{z}/{x}/{y}.png', { maxZoom: 23, opacity: 0 }).addTo(map),
-        L.tileLayer('28012026/Z{z}/{x}/{y}.png', { maxZoom: 23, opacity: 0 }).addTo(map)
-    ];
+var capas = [
+    // 03/12/2025 → tiene Z19
+    L.tileLayer('03122025/Z{z}/{x}/{y}.png', {
+        minZoom: 19,
+        maxZoom: 19,
+        opacity: 1
+    }).addTo(map),
+
+    // 09/01/2026 → SOLO Z18
+    L.tileLayer('09012026/Z{z}/{x}/{y}.png', {
+        minZoom: 18,
+        maxZoom: 18,
+        opacity: 0
+    }).addTo(map),
+
+    // 21/01/2026 → Z19
+    L.tileLayer('21012026/Z{z}/{x}/{y}.png', {
+        minZoom: 19,
+        maxZoom: 19,
+        opacity: 0
+    }).addTo(map),
+
+    // 23/01/2026 → Z19
+    L.tileLayer('23012026/Z{z}/{x}/{y}.png', {
+        minZoom: 19,
+        maxZoom: 19,
+        opacity: 0
+    }).addTo(map),
+
+    // 28/01/2026 → Z19
+    L.tileLayer('28012026/Z{z}/{x}/{y}.png', {
+        minZoom: 19,
+        maxZoom: 19,
+        opacity: 0
+    }).addTo(map)
+];
 
     var slider = document.getElementById('smooth-slider');
     var label = document.getElementById('fecha-label');
