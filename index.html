@@ -3,7 +3,13 @@
 <head>
     <title>SUBESTACION FOTOVOLTAICA</title>
     <meta charset="utf-8" />
+
+    <!-- Leaflet -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
+    <!-- Leaflet-Geoman (mediciones) -->
+    <link rel="stylesheet" href="https://unpkg.com/@geoman-io/leaflet-geoman-free@latest/dist/leaflet-geoman.css" />
+
     <style>
         body { margin: 0; padding: 0; background: #1a1a1a; font-family: 'Segoe UI', sans-serif; overflow: hidden; }
         #map { height: 100vh; width: 100%; cursor: crosshair; }
@@ -81,10 +87,10 @@
 </head>
 <body>
 
-<!-- Cuando tengas el logo final, reemplaza "logo.jpg" por la ruta correcta -->
+<!-- logo inferior izquierdo -->
 <img src="logo.jpg" class="brand-logo" alt="Logo SUBESTACION FOTOVOLTAICA">
 
-<!-- nuevo logo en la esquina superior derecha -->
+<!-- logo esquina superior derecha -->
 <img src="pngegg.png" class="corner-logo" alt="Logo esquina">
 
 <!-- panel de herramientas debajo del logo -->
@@ -104,8 +110,10 @@
     </div>
 </div>
 
+<!-- JS -->
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.9.0/proj4.js"></script>
+<script src="https://unpkg.com/@geoman-io/leaflet-geoman-free@latest/dist/leaflet-geoman.min.js"></script>
 
 <script>
     // Proyecciones UTM 19S y WGS84
@@ -115,6 +123,24 @@
     // Mapa base
     var map = L.map('map', { zoomControl: false, minZoom: 18, maxZoom: 23 })
               .setView([-20.351387, -69.721985], 19);
+
+    // Activar controles y mediciones de Geoman
+    map.pm.addControls({
+        position: 'topleft',
+        drawCircle: false,
+        drawMarker: false,
+        drawCircleMarker: false,
+        drawRectangle: false,
+        drawText: false
+    });
+
+    map.pm.setGlobalOptions({
+        measurement: {
+            measurement: true,
+            displayFormat: 'metric'
+        },
+        tooltips: true
+    });
 
     // Ortofoto base de Google
     L.tileLayer('https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
@@ -193,83 +219,83 @@
 
     updateView();
 
-// ---------------- Herramientas Área / Distancia / Punto ----------------
-var currentTool = null;
+    // ---------------- Herramientas Área / Distancia / Punto ----------------
+    var currentTool = null;
 
-function clearDrawingMode() {
-    map.pm.disableDraw('Polygon');
-    map.pm.disableDraw('Line');
-    map.pm.disableDraw('Marker');
-}
+    function clearDrawingMode() {
+        map.pm.disableDraw('Polygon');
+        map.pm.disableDraw('Line');
+        map.pm.disableDraw('Marker');
+    }
 
-function setTool(tool) {
-    currentTool = tool;
+    function setTool(tool) {
+        currentTool = tool;
 
-    // estado visual de botones
-    document.querySelectorAll('.tool-btn').forEach(function(btn) {
-        btn.classList.remove('active');
+        // estado visual de botones
+        document.querySelectorAll('.tool-btn').forEach(function(btn) {
+            btn.classList.remove('active');
+        });
+
+        clearDrawingMode();
+
+        if (tool === 'area') {
+            document.getElementById('btn-area').classList.add('active');
+            map.pm.enableDraw('Polygon', {
+                snappable: true,
+                allowSelfIntersection: false,
+                tooltips: true,
+                measurement: {
+                    measurement: true,
+                    displayFormat: 'metric'
+                }
+            });
+        } else if (tool === 'dist') {
+            document.getElementById('btn-dist').classList.add('active');
+            map.pm.enableDraw('Line', {
+                snappable: true,
+                tooltips: true,
+                measurement: {
+                    measurement: true,
+                    displayFormat: 'metric'
+                }
+            });
+        } else if (tool === 'point') {
+            document.getElementById('btn-point').classList.add('active');
+            map.pm.enableDraw('Marker', {
+                tooltips: true,
+                measurement: {
+                    measurement: true,
+                    coordinates: true
+                }
+            });
+        }
+    }
+
+    document.getElementById('btn-area').onclick  = function() { setTool('area'); };
+    document.getElementById('btn-dist').onclick  = function() { setTool('dist'); };
+    document.getElementById('btn-point').onclick = function() { setTool('point'); };
+
+    // Popup con m², distancia o coordenadas al finalizar el dibujo
+    map.on('pm:create', function(e) {
+        var layer = e.layer;
+        var meas = L.PM.Utils.getMeasurements(layer, map, 'metric'); // área, longitud, coords
+
+        var content = '';
+
+        if (layer instanceof L.Polygon && meas.area) {
+            content = 'Área: ' + meas.area.toFixed(2) + ' m²';
+        } else if (layer instanceof L.Polyline && meas.length) {
+            content = 'Distancia: ' + meas.length.toFixed(2) + ' m';
+        } else if (layer instanceof L.Marker && meas.coordinates) {
+            content =
+                'Lat: ' + meas.coordinates.lat.toFixed(6) +
+                '<br>Lng: ' + meas.coordinates.lng.toFixed(6);
+        }
+
+        if (content) {
+            layer.bindPopup(content).openPopup();
+        }
     });
-
-    clearDrawingMode();
-
-    if (tool === 'area') {
-        document.getElementById('btn-area').classList.add('active');
-        map.pm.enableDraw('Polygon', {
-            snappable: true,
-            allowSelfIntersection: false,
-            tooltips: true,
-            measurement: {
-                measurement: true,
-                displayFormat: 'metric'
-            }
-        });
-    } else if (tool === 'dist') {
-        document.getElementById('btn-dist').classList.add('active');
-        map.pm.enableDraw('Line', {
-            snappable: true,
-            tooltips: true,
-            measurement: {
-                measurement: true,
-                displayFormat: 'metric'
-            }
-        });
-    } else if (tool === 'point') {
-        document.getElementById('btn-point').classList.add('active');
-        map.pm.enableDraw('Marker', {
-            tooltips: true,
-            measurement: {
-                measurement: true,
-                coordinates: true
-            }
-        });
-    }
-}
-
-document.getElementById('btn-area').onclick  = function() { setTool('area'); };
-document.getElementById('btn-dist').onclick  = function() { setTool('dist'); };
-document.getElementById('btn-point').onclick = function() { setTool('point'); };
-
-// Popup con m², distancia o coordenadas al finalizar
-map.on('pm:create', function(e) {
-    var layer = e.layer;
-    var meas = L.PM.Utils.getMeasurements(layer, map, 'metric'); // área, longitud, coords [web:13]
-
-    var content = '';
-
-    if (layer instanceof L.Polygon && meas.area) {
-        content = 'Área: ' + meas.area.toFixed(2) + ' m²';
-    } else if (layer instanceof L.Polyline && meas.length) {
-        content = 'Distancia: ' + meas.length.toFixed(2) + ' m';
-    } else if (layer instanceof L.Marker && meas.coordinates) {
-        content =
-            'Lat: ' + meas.coordinates.lat.toFixed(6) +
-            '<br>Lng: ' + meas.coordinates.lng.toFixed(6);
-    }
-
-    if (content) {
-        layer.bindPopup(content).openPopup();
-    }
-});
 </script>
 </body>
 </html>
