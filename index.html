@@ -84,7 +84,18 @@
         [-20.3506811321, -69.7212255524]  // Norte-Este
     ];
 
-    // Plano de fundaciones (cuando tengas la imagen final, reemplaza 'fundaciones.png')
+        // Pane para el plano (fundaciones)
+    map.createPane('planoPane');
+    map.getPane('planoPane').style.zIndex = 1000;
+    map.getPane('planoPane').style.pointerEvents = 'none';
+
+    // Coordenadas de la imagen de fundaciones (ajusta si cambias el plano)
+    var imageBounds = [
+        [-20.3519680745, -69.7226506296], // Sur-Oeste
+        [-20.3506811321, -69.7212255524]  // Norte-Este
+    ];
+
+    // Plano de fundaciones
     L.imageOverlay('fundaciones.png', imageBounds, {
         pane: 'planoPane',
         opacity: 0.9,
@@ -98,8 +109,52 @@
             'E: ' + p[0].toFixed(2) + ' | N: ' + p[1].toFixed(2);
     });
 
-    // Fechas de tus ortofotos (puedes editar estos textos)
+    // Fechas de tus ortofotos
     var fechas = ["03/12/2025", "09/01/2026", "21/01/2026", "23/01/2026", "28/01/2026"];
 
-    // Capas raster tipo XYZ (ajusta las rutas cuando tengas las carpetas listas)
-    var capas 
+    // Capas raster tipo XYZ
+    var capas = [
+        L.tileLayer('03122025/Z{z}/{x}/{y}.png', { maxZoom: 23, opacity: 1 }).addTo(map),
+        L.tileLayer('09012026/Z{z}/{x}/{y}.png', { maxZoom: 23, opacity: 0 }).addTo(map),
+        L.tileLayer('21012026/Z{z}/{x}/{y}.png', { maxZoom: 23, opacity: 0 }).addTo(map),
+        L.tileLayer('23012026/Z{z}/{x}/{y}.png', { maxZoom: 23, opacity: 0 }).addTo(map),
+        L.tileLayer('28012026/Z{z}/{x}/{y}.png', { maxZoom: 23, opacity: 0 }).addTo(map)
+    ];
+
+    // Slider para transición suave entre fechas
+    var slider = document.getElementById('smooth-slider');
+    var label = document.getElementById('fecha-label');
+    slider.max = (capas.length - 1) * 100;
+
+    function updateView() {
+        var val = parseFloat(slider.value);
+        var snappingPoint = Math.round(val / 100) * 100;
+        if (Math.abs(val - snappingPoint) < 12) { val = snappingPoint; }
+
+        var index = Math.floor(val / 100);
+        var subVal = (val % 100) / 100;
+        if (index >= capas.length - 1) { index = capas.length - 2; subVal = 1; }
+        
+        capas.forEach(function(c, i) {
+            if (i === index) c.setOpacity(1 - subVal);
+            else if (i === index + 1) c.setOpacity(subVal);
+            else c.setOpacity(0);
+        });
+        
+        var fechaActual = (subVal > 0.5) ? fechas[index + 1] : fechas[index];
+        label.innerText = fechaActual;
+
+        if (subVal === 0 || subVal === 1) label.classList.add('date-active');
+        else label.classList.remove('date-active');
+    }
+
+    slider.addEventListener('input', updateView);
+    slider.addEventListener('change', function() {
+        this.value = Math.round(this.value / 100) * 100;
+        updateView();
+    });
+
+    updateView();
+</script>
+</body>
+</html>
