@@ -1,161 +1,226 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>SUBESTACION FOTOVOLTAICA</title>
-    <meta charset="utf-8" />
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <style>
-        body { margin: 0; padding: 0; background: #1a1a1a; font-family: 'Segoe UI', sans-serif; overflow: hidden; }
-        #map { height: 100vh; width: 100%; cursor: crosshair; }
-        
-        .brand-logo {
-            position: absolute; bottom: 20px; left: 20px; z-index: 2500;
-            width: 150px; filter: drop-shadow(0 2px 5px rgba(0,0,0,0.7));
-            pointer-events: none;
-        }
-        /* nuevo logo en la esquina superior derecha */
-.corner-logo {
-    position: absolute;
-    top: 15px;
-    right: 15px;
-    z-index: 2500;
-    width: 80px; /* ajusta tamaño */
-    pointer-events: none;
-}
+  <meta charset="utf-8" />
+  <title>SUBESTACION FOTOVOLTAICA</title>
 
-        .ui-container {
-            position: absolute; bottom: 25px; left: 50%; transform: translateX(-50%);
-            width: 25%; min-width: 220px; z-index: 2000;
-            display: flex; flex-direction: column; align-items: center; gap: 8px;
-        }
+  <!-- Leaflet -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <!-- Geoman -->
+  <link rel="stylesheet" href="https://unpkg.com/@geoman-io/leaflet-geoman-free@latest/dist/leaflet-geoman.css" />
 
-        .utm-box {
-            background: rgba(0,0,0,0.9); color: #00ff00; padding: 5px 12px;
-            border-radius: 4px; border: 1px solid #444; font-family: monospace;
-            font-size: 11px; font-weight: bold;
-        }
+  <style>
+    body { margin:0; padding:0; font-family:'Segoe UI',sans-serif; }
 
-        .slider-wrapper {
-            background: rgba(0,0,0,0.9); padding: 9px 11px; border-radius: 6px;
-            width: 100%; border: 1px solid #333; text-align: center;
-        }
+    #map { position:absolute; top:0; right:0; bottom:0; left:280px; }
 
-        .current-date-label { 
-            display: inline-block; color: #00ff00; font-size: 11px; font-weight: bold;
-            border: 1px solid #00ff00; padding: 1.5px 6px; border-radius: 3px;
-            margin-bottom: 6px; background: rgba(0, 255, 0, 0.05);
-        }
+    /* Panel lateral de mediciones */
+    .measure-panel {
+      position:absolute;
+      top:0; left:0; bottom:0;
+      width:280px;
+      background:#f7f8fb;
+      border-right:1px solid #dde1eb;
+      padding:12px 10px;
+      box-sizing:border-box;
+      overflow-y:auto;
+      z-index:2000;
+    }
+    .measure-panel h3 {
+      margin:0 0 8px;
+      font-size:13px;
+      letter-spacing:1px;
+      color:#555;
+    }
+    .measure-card {
+      background:#fff;
+      border-radius:6px;
+      border:1px solid #e0e4ef;
+      padding:8px 10px;
+      margin-bottom:8px;
+      font-size:12px;
+      box-shadow:0 1px 2px rgba(0,0,0,0.06);
+      position:relative;
+    }
+    .measure-title {
+      font-size:11px;
+      font-weight:600;
+      color:#1f4fa3;
+      margin-bottom:2px;
+      text-transform:uppercase;
+    }
+    .measure-delete {
+      position:absolute;
+      top:6px;
+      right:8px;
+      cursor:pointer;
+      color:#d44;
+      font-size:14px;
+    }
 
-        .date-active { background: #00ff00 !important; color: #000 !important; }
-        input[type=range] { width: 100%; cursor: pointer; accent-color: #00ff00; height: 3px; }
-    </style>
+    /* Barra de herramientas arriba del mapa */
+    .tool-panel {
+      position:absolute;
+      top:10px;
+      left:300px;
+      z-index:2500;
+      display:flex;
+      gap:6px;
+    }
+    .tool-btn {
+      background:#ffffff;
+      border-radius:18px;
+      border:1px solid #c0cfd9;
+      padding:6px 14px;
+      font-size:13px;
+      cursor:pointer;
+      color:#333;
+      box-shadow:0 1px 2px rgba(0,0,0,0.25);
+    }
+    .tool-btn.active {
+      background:#e6f0ff;
+      border-color:#2b73ff;
+      color:#2b73ff;
+    }
+  </style>
 </head>
 <body>
 
-<!-- Cuando tengas el logo final, reemplaza "logo.jpg" por la ruta correcta -->
-<img src="logo.jpg" class="brand-logo" alt="Logo SUBESTACION FOTOVOLTAICA">
+<div class="measure-panel">
+  <h3>MEDICIONES (<span id="measure-count">0</span>)</h3>
+  <div id="measure-list"></div>
+</div>
 
-<!-- nuevo logo en la esquina superior derecha -->
-<img src="pngegg.png" class="corner-logo" alt="Logo esquina">
+<div class="tool-panel">
+  <button id="btn-area" class="tool-btn active">Área</button>
+  <button id="btn-dist" class="tool-btn">Distancia</button>
+  <button id="btn-point" class="tool-btn">Punto</button>
+</div>
 
 <div id="map"></div>
 
-<div class="ui-container">
-    <div class="utm-box" id="utm-coord">E: --- | N: ---</div>
-    <div class="slider-wrapper">
-        <div id="fecha-label" class="current-date-label">CARGANDO...</div>
-        <input type="range" id="smooth-slider" min="0" value="0" step="1">        
-    </div>
-</div>
-
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.9.0/proj4.js"></script>
+<script src="https://unpkg.com/@geoman-io/leaflet-geoman-free@latest/dist/leaflet-geoman.min.js"></script>
 
 <script>
-    // Proyecciones UTM 19S y WGS84
-    var utm19S = "+proj=utm +zone=19 +south +datum=WGS84 +units=m +no_defs";
-    var wgs84 = "+proj=longlat +datum=WGS84 +no_defs";
+  // Mapa base
+  var map = L.map('map').setView([-33.4489,-70.6693], 15);
 
-    // Mapa base
-    var map = L.map('map', { zoomControl: false, minZoom: 18, maxZoom: 23 })
-              .setView([-20.351387, -69.721985], 19);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19
+  }).addTo(map);
 
-    // Ortofoto base de Google (puedes cambiarla después si quieres usar solo tus ortofotos)
-    L.tileLayer('https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
-        maxZoom: 23
-    }).addTo(map);
+  // Activar Geoman
+  map.pm.addControls({
+    position:'topleft',
+    drawCircle:false,
+    drawMarker:false,
+    drawCircleMarker:false,
+    drawRectangle:false,
+    drawText:false
+  });
 
-    // Pane para el plano (fundaciones)
-    map.createPane('planoPane');
-    map.getPane('planoPane').style.zIndex = 1000;
-    map.getPane('planoPane').style.pointerEvents = 'none';
+  map.pm.setGlobalOptions({
+    measurement:{ measurement:true, displayFormat:'metric' },
+    tooltips:true
+  });
 
-    // Coordenadas de la imagen de fundaciones (ajusta si cambias el plano)
-    var imageBounds = [
-        [-20.3519680745, -69.7226506296], // Sur-Oeste
-        [-20.3506811321, -69.7212255524]  // Norte-Este
-    ];
+  // --------- Herramientas ---------
+  var currentTool = null;
 
-    // Plano de fundaciones (cuando tengas la imagen final, reemplaza 'fundaciones.png')
-    L.imageOverlay('fundaciones.png', imageBounds, {
-        pane: 'planoPane',
-        opacity: 0.9,
-        interactive: false
-    }).addTo(map);
+  function clearDrawingMode() {
+    map.pm.disableDraw('Polygon');
+    map.pm.disableDraw('Line');
+    map.pm.disableDraw('Marker');
+  }
 
-    // Coordenadas UTM bajo el mouse
-    map.on('mousemove', function(e) {
-        var p = proj4(wgs84, utm19S, [e.latlng.lng, e.latlng.lat]);
-        document.getElementById('utm-coord').innerHTML =
-            'E: ' + p[0].toFixed(2) + ' | N: ' + p[1].toFixed(2);
-    });
+  function setTool(tool){
+    currentTool = tool;
+    document.querySelectorAll('.tool-btn').forEach(function(b){ b.classList.remove('active'); });
+    clearDrawingMode();
 
-    // Fechas de tus ortofotos (puedes editar estos textos)
-    var fechas = ["03/12/2025", "09/01/2026", "21/01/2026", "23/01/2026", "28/01/2026"];
-
-    // Capas raster tipo XYZ (ajusta las rutas cuando tengas las carpetas listas)
-    var capas = [
-        L.tileLayer('03122025/Z{z}/{y}/{x}.png', { maxZoom: 23, opacity: 1 }).addTo(map),
-        L.tileLayer('09012026/Z{z}/{y}/{x}.png', { maxZoom: 23, opacity: 0 }).addTo(map),
-        L.tileLayer('21012026/Z{z}/{y}/{x}.png', { maxZoom: 23, opacity: 0 }).addTo(map),
-        L.tileLayer('23012026/Z{z}/{y}/{x}.png', { maxZoom: 23, opacity: 0 }).addTo(map),
-        L.tileLayer('28012026/Z{z}/{y}/{x}.png', { maxZoom: 23, opacity: 0 }).addTo(map)
-    ];
-
-    // Slider para transición suave entre fechas
-    var slider = document.getElementById('smooth-slider');
-    var label = document.getElementById('fecha-label');
-    slider.max = (capas.length - 1) * 100;
-
-    function updateView() {
-        var val = parseFloat(slider.value);
-        var snappingPoint = Math.round(val / 100) * 100;
-        if (Math.abs(val - snappingPoint) < 12) { val = snappingPoint; }
-
-        var index = Math.floor(val / 100);
-        var subVal = (val % 100) / 100;
-        if (index >= capas.length - 1) { index = capas.length - 2; subVal = 1; }
-        
-        capas.forEach(function(c, i) {
-            if (i === index) c.setOpacity(1 - subVal);
-            else if (i === index + 1) c.setOpacity(subVal);
-            else c.setOpacity(0);
-        });
-        
-        var fechaActual = (subVal > 0.5) ? fechas[index + 1] : fechas[index];
-        label.innerText = fechaActual;
-
-        if (subVal === 0 || subVal === 1) label.classList.add('date-active');
-        else label.classList.remove('date-active');
+    if (tool==='area'){
+      document.getElementById('btn-area').classList.add('active');
+      map.pm.enableDraw('Polygon', {
+        snappable:true,
+        allowSelfIntersection:false,
+        tooltips:true,
+        measurement:{ measurement:true, displayFormat:'metric' }
+      });
+    } else if (tool==='dist'){
+      document.getElementById('btn-dist').classList.add('active');
+      map.pm.enableDraw('Line', {
+        snappable:true,
+        tooltips:true,
+        measurement:{ measurement:true, displayFormat:'metric' }
+      });
+    } else if (tool==='point'){
+      document.getElementById('btn-point').classList.add('active');
+      map.pm.enableDraw('Marker', {
+        tooltips:true,
+        measurement:{ measurement:true, coordinates:true }
+      });
     }
+  }
 
-    slider.addEventListener('input', updateView);
-    slider.addEventListener('change', function() {
-        this.value = Math.round(this.value / 100) * 100;
-        updateView();
-    });
+  document.getElementById('btn-area').onclick  = function(){ setTool('area'); };
+  document.getElementById('btn-dist').onclick  = function(){ setTool('dist'); };
+  document.getElementById('btn-point').onclick = function(){ setTool('point'); };
 
-    updateView();
+  setTool('area');
+
+  // --------- Panel de mediciones ---------
+  var measureList = document.getElementById('measure-list');
+  var measureCountSpan = document.getElementById('measure-count');
+
+  function updateMeasureCount(){
+    measureCountSpan.textContent = measureList.children.length;
+  }
+
+  function addMeasureCard(type, htmlText, layer){
+    var card = document.createElement('div');
+    card.className = 'measure-card';
+
+    var title = document.createElement('div');
+    title.className = 'measure-title';
+    title.textContent = type;
+    card.appendChild(title);
+
+    var body = document.createElement('div');
+    body.innerHTML = htmlText;
+    card.appendChild(body);
+
+    var del = document.createElement('span');
+    del.className = 'measure-delete';
+    del.innerHTML = '&times;';
+    del.onclick = function(){
+      map.removeLayer(layer);
+      measureList.removeChild(card);
+      updateMeasureCount();
+    };
+    card.appendChild(del);
+
+    measureList.appendChild(card);
+    updateMeasureCount();
+  }
+
+  // Cuando se termina de dibujar una geometría
+  map.on('pm:create', function(e){
+    var layer = e.layer;
+    var meas = L.PM.Utils.getMeasurements(layer, map, 'metric'); // área, length, coords [web:13]
+
+    if (layer instanceof L.Polygon && meas.area){
+      var txt = (meas.area).toFixed(2) + ' m²';
+      addMeasureCard('DISTANCIA'.replace('DISTANCIA','ÁREA'), txt, layer);
+    } else if (layer instanceof L.Polyline && meas.length){
+      var txt2 = (meas.length).toFixed(2) + ' m';
+      addMeasureCard('DISTANCIA', txt2, layer);
+    } else if (layer instanceof L.Marker && meas.coordinates){
+      var c = meas.coordinates;
+      var txt3 = 'Lat: ' + c.lat.toFixed(6) + '<br>Lng: ' + c.lng.toFixed(6);
+      addMeasureCard('PUNTO', txt3, layer);
+    }
+  });
 </script>
 </body>
 </html>
