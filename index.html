@@ -43,6 +43,7 @@
 </head>
 <body>
 
+<!-- Cuando tengas el logo final, reemplaza "logo.jpg" por la ruta correcta -->
 <img src="logo.jpg" class="brand-logo" alt="Logo SUBESTACION FOTOVOLTAICA">
 
 <div id="map"></div>
@@ -59,89 +60,57 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.9.0/proj4.js"></script>
 
 <script>
+    // Proyecciones UTM 19S y WGS84
     var utm19S = "+proj=utm +zone=19 +south +datum=WGS84 +units=m +no_defs";
     var wgs84 = "+proj=longlat +datum=WGS84 +no_defs";
 
-var map = L.map('map', { zoomControl: false, minZoom: 18, maxZoom: 19 })
-          .setView([-20.351387, -69.721985], 19);
+    // Mapa base
+    var map = L.map('map', { zoomControl: false, minZoom: 18, maxZoom: 23 })
+              .setView([-20.351387, -69.721985], 19);
 
-// Limitar el movimiento del mapa a la zona de la subestación
-var bounds = [
-    [-20.3523, -69.7230], // Sur-Oeste (ajusta si hace falta)
-    [-20.3503, -69.7209]  // Norte-Este
-];
-map.setMaxBounds(bounds);
-map.on('drag', function() {
-    map.panInsideBounds(bounds, { animate: false });
-});
+    // Ortofoto base de Google (puedes cambiarla después si quieres usar solo tus ortofotos)
+    L.tileLayer('https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
+        maxZoom: 23
+    }).addTo(map);
 
-// (si quieres volver a usar Google de fondo, descomenta estas líneas)
-// L.tileLayer('https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
-//     maxZoom: 23
-// }).addTo(map);
-
-map.createPane('planoPane');
+    // Pane para el plano (fundaciones)
+    map.createPane('planoPane');
     map.getPane('planoPane').style.zIndex = 1000;
     map.getPane('planoPane').style.pointerEvents = 'none';
 
+    // Coordenadas de la imagen de fundaciones (ajusta si cambias el plano)
     var imageBounds = [
-        [-20.3519680745, -69.7226506296],
-        [-20.3506811321, -69.7212255524]
+        [-20.3519680745, -69.7226506296], // Sur-Oeste
+        [-20.3506811321, -69.7212255524]  // Norte-Este
     ];
 
+    // Plano de fundaciones (cuando tengas la imagen final, reemplaza 'fundaciones.png')
     L.imageOverlay('fundaciones.png', imageBounds, {
         pane: 'planoPane',
         opacity: 0.9,
         interactive: false
     }).addTo(map);
 
+    // Coordenadas UTM bajo el mouse
     map.on('mousemove', function(e) {
         var p = proj4(wgs84, utm19S, [e.latlng.lng, e.latlng.lat]);
         document.getElementById('utm-coord').innerHTML =
             'E: ' + p[0].toFixed(2) + ' | N: ' + p[1].toFixed(2);
     });
 
-  // Fechas de tus ortofotos
-var fechas = ["03/12/2025", "09/01/2026", "21/01/2026", "23/01/2026", "28/01/2026"];
+    // Fechas de tus ortofotos (puedes editar estos textos)
+    var fechas = ["03/12/2025", "09/01/2026", "21/01/2026", "23/01/2026", "28/01/2026"];
 
-// Capas raster tipo XYZ con sus zooms reales
-var capas = [
-    // 03/12/2025 → tiene Z19
-    L.tileLayer('03122025/Z{z}/{x}/{y}.png', {
-        minZoom: 19,
-        maxZoom: 19,
-        opacity: 1
-    }).addTo(map),
+    // Capas raster tipo XYZ (ajusta las rutas cuando tengas las carpetas listas)
+    var capas = [
+        L.tileLayer('03122025/Z{z}/{y}/{x}.png', { maxZoom: 23, opacity: 1 }).addTo(map),
+        L.tileLayer('09012026/Z{z}/{y}/{x}.png', { maxZoom: 23, opacity: 0 }).addTo(map),
+        L.tileLayer('21012026/Z{z}/{y}/{x}.png', { maxZoom: 23, opacity: 0 }).addTo(map),
+        L.tileLayer('23012026/Z{z}/{y}/{x}.png', { maxZoom: 23, opacity: 0 }).addTo(map),
+        L.tileLayer('28012026/Z{z}/{y}/{x}.png', { maxZoom: 23, opacity: 0 }).addTo(map)
+    ];
 
-    // 09/01/2026 → SOLO Z18
-    L.tileLayer('09012026/Z{z}/{x}/{y}.png', {
-        minZoom: 18,
-        maxZoom: 18,
-        opacity: 0
-    }).addTo(map),
-
-    // 21/01/2026 → Z19
-    L.tileLayer('21012026/Z{z}/{x}/{y}.png', {
-        minZoom: 19,
-        maxZoom: 19,
-        opacity: 0
-    }).addTo(map),
-
-    // 23/01/2026 → Z19
-    L.tileLayer('23012026/Z{z}/{x}/{y}.png', {
-        minZoom: 19,
-        maxZoom: 19,
-        opacity: 0
-    }).addTo(map),
-
-    // 28/01/2026 → Z19
-    L.tileLayer('28012026/Z{z}/{x}/{y}.png', {
-        minZoom: 19,
-        maxZoom: 19,
-        opacity: 0
-    }).addTo(map)
-];
-
+    // Slider para transición suave entre fechas
     var slider = document.getElementById('smooth-slider');
     var label = document.getElementById('fecha-label');
     slider.max = (capas.length - 1) * 100;
