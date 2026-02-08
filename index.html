@@ -1,852 +1,161 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <meta charset="utf-8" />
-  <title>SUBESTACION FOTOVOLTAICA</title>
+    <title>SUBESTACION FOTOVOLTAICA</title>
+    <meta charset="utf-8" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        body { margin: 0; padding: 0; background: #1a1a1a; font-family: 'Segoe UI', sans-serif; overflow: hidden; }
+        #map { height: 100vh; width: 100%; cursor: crosshair; }
+        
+        .brand-logo {
+            position: absolute; bottom: 20px; left: 20px; z-index: 2500;
+            width: 150px; filter: drop-shadow(0 2px 5px rgba(0,0,0,0.7));
+            pointer-events: none;
+        }
+        /* nuevo logo en la esquina superior derecha */
+.corner-logo {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    z-index: 2500;
+    width: 80px; /* ajusta tamaño */
+    pointer-events: none;
+}
 
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+        .ui-container {
+            position: absolute; bottom: 25px; left: 50%; transform: translateX(-50%);
+            width: 25%; min-width: 220px; z-index: 2000;
+            display: flex; flex-direction: column; align-items: center; gap: 8px;
+        }
 
-  <style>
-    body {
-      margin: 0;
-      padding: 0;
-      background: #1a1a1a;
-      font-family: "Segoe UI", sans-serif;
-      overflow: hidden;
-    }
+        .utm-box {
+            background: rgba(0,0,0,0.9); color: #00ff00; padding: 5px 12px;
+            border-radius: 4px; border: 1px solid #444; font-family: monospace;
+            font-size: 11px; font-weight: bold;
+        }
 
-    #map {
-      height: 100vh;
-      width: 100%;
-      cursor: crosshair;
-    }
+        .slider-wrapper {
+            background: rgba(0,0,0,0.9); padding: 9px 11px; border-radius: 6px;
+            width: 100%; border: 1px solid #333; text-align: center;
+        }
 
-    .brand-logo {
-      position: absolute;
-      bottom: 20px;
-      left: 20px;
-      z-index: 2500;
-      width: 150px;
-      filter: drop-shadow(0 2px 5px rgba(0,0,0,0.7));
-      pointer-events: none;
-    }
+        .current-date-label { 
+            display: inline-block; color: #00ff00; font-size: 11px; font-weight: bold;
+            border: 1px solid #00ff00; padding: 1.5px 6px; border-radius: 3px;
+            margin-bottom: 6px; background: rgba(0, 255, 0, 0.05);
+        }
 
-    .corner-logo {
-      position: absolute;
-      top: 15px;
-      right: 15px;
-      z-index: 2500;
-      width: 80px;
-      pointer-events: none;
-    }
-
-    .ui-container {
-      position: absolute;
-      bottom: 25px;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 25%;
-      min-width: 220px;
-      z-index: 2000;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .utm-box {
-      background: rgba(0, 0, 0, 0.9);
-      color: #00ff00;
-      padding: 5px 12px;
-      border-radius: 4px;
-      border: 1px solid #444;
-      font-family: monospace;
-      font-size: 11px;
-      font-weight: bold;
-    }
-
-    .slider-wrapper {
-      background: rgba(0, 0, 0, 0.9);
-      padding: 9px 11px;
-      border-radius: 6px;
-      width: 100%;
-      border: 1px solid #333;
-      text-align: center;
-    }
-
-    .current-date-label {
-      display: inline-block;
-      color: #00ff00;
-      font-size: 11px;
-      font-weight: bold;
-      border: 1px solid #00ff00;
-      padding: 1.5px 6px;
-      border-radius: 3px;
-      margin-bottom: 6px;
-      background: rgba(0, 255, 0, 0.05);
-    }
-
-    .date-active {
-      background: #00ff00 !important;
-      color: #000 !important;
-    }
-
-    input[type="range"] {
-      width: 100%;
-      cursor: pointer;
-      accent-color: #00ff00;
-      height: 3px;
-    }
-
-    /* ======= PANEL LATERAL DE HERRAMIENTAS ======= */
-
-    #sidebar {
-      position: fixed;
-      left: 0;
-      top: 0;
-      bottom: 0;
-      width: 340px;
-      background: #f5f5f5;
-      border-right: 1px solid #ccc;
-      padding: 10px;
-      box-sizing: border-box;
-      overflow-y: auto;
-      z-index: 3000;
-      color:#000;
-    }
-
-    #map-container {
-      position: absolute;
-      left: 340px;
-      top: 0;
-      right: 0;
-      bottom: 0;
-      display:flex;
-      flex-direction:column;
-      pointer-events: none; /* sólo evita que el contenedor bloquee; el mapa sigue activo */
-    }
-
-    #toolbar {
-      position: absolute;
-      top: 10px;
-      left: 360px;
-      height: 48px;
-      background: rgba(255,255,255,0.95);
-      border: 1px solid #ccc;
-      border-radius: 6px;
-      display:flex;
-      align-items:center;
-      padding: 4px 8px;
-      gap: 8px;
-      z-index: 3001;
-      pointer-events: auto;
-    }
-
-    .tool-btn {
-      flex:0 0 auto;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      gap:4px;
-      padding:6px 10px;
-      border-radius:6px;
-      border:1px solid #ccc;
-      background:#fafafa;
-      cursor:pointer;
-      font-size:12px;
-      color:#333;
-      user-select:none;
-      -webkit-tap-highlight-color: transparent;
-    }
-    .tool-btn span.icon {
-      font-size:18px;
-      line-height:1;
-    }
-    .tool-btn.active {
-      background:#1976d2;
-      border-color:#125a9c;
-      color:#fff;
-    }
-
-    h2 {
-      margin-top: 8px;
-      font-size: 16px;
-      color:#000;
-    }
-    .section-title {
-      margin-top: 10px;
-      margin-bottom: 4px;
-      font-size: 14px;
-      font-weight: bold;
-      border-bottom: 1px solid #ccc;
-      padding-bottom: 2px;
-      color:#000;
-    }
-    .line-item, .point-item, .area-item {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      gap: 4px;
-      padding: 4px 0;
-      border-bottom: 1px solid #ddd;
-      font-size: 12px;
-    }
-    .item-text {
-      flex: 1;
-      cursor: pointer;
-      color:#000;
-      white-space: pre-line;
-    }
-    .item-text:hover {
-      text-decoration: underline;
-    }
-    .active-item {
-      background: #c8e6ff;
-      font-weight: bold;
-    }
-    .delete-btn {
-      font-size: 11px;
-      padding: 2px 4px;
-      cursor: pointer;
-      border: 1px solid #c00;
-      background: #fdd;
-      color: #900;
-      border-radius: 3px;
-    }
-    .delete-btn:hover {
-      background: #fbb;
-    }
-    small {
-      font-size: 11px;
-      color: #666;
-    }
-
-    @media (max-width: 900px) {
-      #sidebar {
-        width: 260px;
-      }
-      #toolbar {
-        left: 280px;
-      }
-      .tool-btn span.label {
-        display:none;
-      }
-    }
-  </style>
+        .date-active { background: #00ff00 !important; color: #000 !important; }
+        input[type=range] { width: 100%; cursor: pointer; accent-color: #00ff00; height: 3px; }
+    </style>
 </head>
 <body>
 
-  <!-- LOGOS -->
-  <img src="logo.jpg" class="brand-logo" alt="Logo SUBESTACION FOTOVOLTAICA">
-  <img src="pngegg.png" class="corner-logo" alt="Logo esquina">
+<!-- Cuando tengas el logo final, reemplaza "logo.jpg" por la ruta correcta -->
+<img src="logo.jpg" class="brand-logo" alt="Logo SUBESTACION FOTOVOLTAICA">
 
-  <!-- MAPA -->
-  <div id="map"></div>
+<!-- nuevo logo en la esquina superior derecha -->
+<img src="pngegg.png" class="corner-logo" alt="Logo esquina">
 
-  <!-- UI UTM + SLIDER -->
-  <div class="ui-container">
-    <div class="utm-box" id="utm-coord">E ---  N ---</div>
+<div id="map"></div>
+
+<div class="ui-container">
+    <div class="utm-box" id="utm-coord">E: --- | N: ---</div>
     <div class="slider-wrapper">
-      <div id="fecha-label" class="current-date-label">CARGANDO...</div>
-      <input type="range" id="smooth-slider" min="0" value="0" step="1">
+        <div id="fecha-label" class="current-date-label">CARGANDO...</div>
+        <input type="range" id="smooth-slider" min="0" value="0" step="1">        
     </div>
-  </div>
+</div>
 
-  <!-- PANEL LATERAL DE MEDICIÓN -->
-  <div id="sidebar">
-    <h2>Panel de control</h2>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.9.0/proj4.js"></script>
 
-    <div class="section-title">Líneas medidas</div>
-    <div id="line-list">
-      <small>Botón regla y dos toques en el mapa para crear una línea.</small>
-    </div>
+<script>
+    // Proyecciones UTM 19S y WGS84
+    var utm19S = "+proj=utm +zone=19 +south +datum=WGS84 +units=m +no_defs";
+    var wgs84 = "+proj=longlat +datum=WGS84 +no_defs";
 
-    <div class="section-title">Áreas medidas</div>
-    <div id="area-list">
-      <small>Botón área para agregar vértices y luego “Cerrar área”.</small>
-    </div>
+    // Mapa base
+    var map = L.map('map', { zoomControl: false, minZoom: 18, maxZoom: 23 })
+              .setView([-20.351387, -69.721985], 19);
 
-    <div class="section-title">Ubicaciones (UTM)</div>
-    <div id="point-list">
-      <small>Botón punto y toque en el mapa para agregar una ubicación.</small>
-    </div>
-  </div>
-
-  <!-- TOOLBAR SUPERIOR -->
-  <div id="toolbar">
-    <div class="tool-btn" id="tool-line">
-      <span class="icon">📏</span><span class="label">Línea</span>
-    </div>
-    <div class="tool-btn" id="tool-area">
-      <span class="icon">🔺</span><span class="label" id="tool-area-label">Área</span>
-    </div>
-    <div class="tool-btn" id="tool-point">
-      <span class="icon">📍</span><span class="label">Punto</span>
-    </div>
-    <div class="tool-btn" id="tool-cancel">
-      <span class="icon">❌</span><span class="label">Cancelar</span>
-    </div>
-  </div>
-
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.9.0/proj4.js"></script>
-
-  <script>
-    // ===== PROYECCIONES =====
-    var utm19S = '+proj=utm +zone=19 +south +datum=WGS84 +units=m +no_defs';
-    var wgs84 = '+proj=longlat +datum=WGS84 +no_defs';
-
-    // ===== MAPA BASE =====
-    var map = L.map('map', {
-      zoomControl: false,
-      minZoom: 18,
-      maxZoom: 23
-    }).setView([-20.351387, -69.721985], 19);
-
+    // Ortofoto base de Google (puedes cambiarla después si quieres usar solo tus ortofotos)
     L.tileLayer('https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
-      maxZoom: 23
+        maxZoom: 23
     }).addTo(map);
 
-    // Pane para el plano de fundaciones
+    // Pane para el plano (fundaciones)
     map.createPane('planoPane');
     map.getPane('planoPane').style.zIndex = 1000;
     map.getPane('planoPane').style.pointerEvents = 'none';
 
-    // Coordenadas de la imagen de fundaciones
+    // Coordenadas de la imagen de fundaciones (ajusta si cambias el plano)
     var imageBounds = [
-      [-20.3519680745, -69.7226506296],
-      [-20.3506811321, -69.7212255524]
+        [-20.3519680745, -69.7226506296], // Sur-Oeste
+        [-20.3506811321, -69.7212255524]  // Norte-Este
     ];
 
+    // Plano de fundaciones (cuando tengas la imagen final, reemplaza 'fundaciones.png')
     L.imageOverlay('fundaciones.png', imageBounds, {
-      pane: 'planoPane',
-      opacity: 0.9,
-      interactive: false
+        pane: 'planoPane',
+        opacity: 0.9,
+        interactive: false
     }).addTo(map);
 
-    // ===== COORDENADAS UTM BAJO EL MOUSE =====
+    // Coordenadas UTM bajo el mouse
     map.on('mousemove', function(e) {
-      var p = proj4(wgs84, utm19S, [e.latlng.lng, e.latlng.lat]);
-      document.getElementById('utm-coord').innerHTML =
-        'E ' + p[0].toFixed(2) + '  N ' + p[1].toFixed(2);
+        var p = proj4(wgs84, utm19S, [e.latlng.lng, e.latlng.lat]);
+        document.getElementById('utm-coord').innerHTML =
+            'E: ' + p[0].toFixed(2) + ' | N: ' + p[1].toFixed(2);
     });
 
-    // ===== SLIDER DE ORTOFOTOS =====
-    var fechas = [
-      '03-12-2025',
-      '09-01-2026',
-      '21-01-2026',
-      '23-01-2026',
-      '28-01-2026'
-    ];
+    // Fechas de tus ortofotos (puedes editar estos textos)
+    var fechas = ["03/12/2025", "09/01/2026", "21/01/2026", "23/01/2026", "28/01/2026"];
 
+    // Capas raster tipo XYZ (ajusta las rutas cuando tengas las carpetas listas)
     var capas = [
-      L.tileLayer('03122025/{z}/{y}/{x}.png', { maxZoom: 23, opacity: 1 }).addTo(map),
-      L.tileLayer('09012026/{z}/{y}/{x}.png', { maxZoom: 23, opacity: 0 }).addTo(map),
-      L.tileLayer('21012026/{z}/{y}/{x}.png', { maxZoom: 23, opacity: 0 }).addTo(map),
-      L.tileLayer('23012026/{z}/{y}/{x}.png', { maxZoom: 23, opacity: 0 }).addTo(map),
-      L.tileLayer('28012026/{z}/{y}/{x}.png', { maxZoom: 23, opacity: 0 }).addTo(map)
+        L.tileLayer('03122025/Z{z}/{y}/{x}.png', { maxZoom: 23, opacity: 1 }).addTo(map),
+        L.tileLayer('09012026/Z{z}/{y}/{x}.png', { maxZoom: 23, opacity: 0 }).addTo(map),
+        L.tileLayer('21012026/Z{z}/{y}/{x}.png', { maxZoom: 23, opacity: 0 }).addTo(map),
+        L.tileLayer('23012026/Z{z}/{y}/{x}.png', { maxZoom: 23, opacity: 0 }).addTo(map),
+        L.tileLayer('28012026/Z{z}/{y}/{x}.png', { maxZoom: 23, opacity: 0 }).addTo(map)
     ];
 
+    // Slider para transición suave entre fechas
     var slider = document.getElementById('smooth-slider');
     var label = document.getElementById('fecha-label');
-
     slider.max = (capas.length - 1) * 100;
 
     function updateView() {
-      var val = parseFloat(slider.value);
-      var snappingPoint = Math.round(val / 100) * 100;
-      if (Math.abs(val - snappingPoint) < 12) {
-        val = snappingPoint;
-      }
+        var val = parseFloat(slider.value);
+        var snappingPoint = Math.round(val / 100) * 100;
+        if (Math.abs(val - snappingPoint) < 12) { val = snappingPoint; }
 
-      var index = Math.floor(val / 100);
-      var subVal = (val % 100) / 100;
+        var index = Math.floor(val / 100);
+        var subVal = (val % 100) / 100;
+        if (index >= capas.length - 1) { index = capas.length - 2; subVal = 1; }
+        
+        capas.forEach(function(c, i) {
+            if (i === index) c.setOpacity(1 - subVal);
+            else if (i === index + 1) c.setOpacity(subVal);
+            else c.setOpacity(0);
+        });
+        
+        var fechaActual = (subVal > 0.5) ? fechas[index + 1] : fechas[index];
+        label.innerText = fechaActual;
 
-      if (index >= capas.length - 1) {
-        index = capas.length - 2;
-        subVal = 1;
-      }
-
-      capas.forEach(function(c, i) {
-        if (i === index) {
-          c.setOpacity(1 - subVal);
-        } else if (i === index + 1) {
-          c.setOpacity(subVal);
-        } else {
-          c.setOpacity(0);
-        }
-      });
-
-      var fechaActual = subVal < 0.5 ? fechas[index] : fechas[index + 1];
-      label.innerText = fechaActual;
-
-      if (subVal === 0 || subVal === 1) {
-        label.classList.add('date-active');
-      } else {
-        label.classList.remove('date-active');
-      }
+        if (subVal === 0 || subVal === 1) label.classList.add('date-active');
+        else label.classList.remove('date-active');
     }
 
     slider.addEventListener('input', updateView);
     slider.addEventListener('change', function() {
-      this.value = Math.round(this.value / 100) * 100;
-      updateView();
+        this.value = Math.round(this.value / 100) * 100;
+        updateView();
     });
 
     updateView();
-
-    // ====== FUNCIONES UTM PARA HERRAMIENTAS ======
-    function latLngToUTM(lat, lng) {
-      var utm = proj4(wgs84, utm19S, [lng, lat]);
-      return { easting: utm[0], northing: utm[1] };
-    }
-
-    // ===== MODOS DE HERRAMIENTA =====
-    var currentMode = null; // 'line' | 'area' | 'point' | null
-
-    function setMode(mode) {
-      currentMode = mode;
-      ['tool-line','tool-area','tool-point'].forEach(function(id){
-        var b = document.getElementById(id);
-        if (!b) return;
-        var m = (id === 'tool-line' ? 'line' :
-                 id === 'tool-area' ? 'area' : 'point');
-        if (m === mode) b.classList.add('active');
-        else b.classList.remove('active');
-      });
-
-      var areaLabel = document.getElementById('tool-area-label');
-      if (drawingArea && areaPoints.length >= 3 && currentMode === 'area') {
-        areaLabel.textContent = 'Cerrar área';
-      } else {
-        areaLabel.textContent = 'Área';
-      }
-
-      if (mode !== 'area') cancelAreaDrawing();
-      if (mode !== 'line') cancelLineDrawing();
-    }
-
-    document.getElementById('tool-line').onclick = function () {
-      setMode(currentMode === 'line' ? null : 'line');
-    };
-
-    document.getElementById('tool-area').onclick = function () {
-      if (currentMode !== 'area') {
-        setMode('area');
-      } else {
-        if (drawingArea && areaPoints.length >= 3) {
-          closeAreaFromButton();
-        } else {
-          setMode('area');
-        }
-      }
-    };
-
-    document.getElementById('tool-point').onclick = function () {
-      setMode(currentMode === 'point' ? null : 'point');
-    };
-
-    document.getElementById('tool-cancel').onclick = function () {
-      clearLineHighlight();
-      clearAreaHighlight();
-      clearPointHighlight();
-      cancelLineDrawing();
-      cancelAreaDrawing();
-      setMode(null);
-    };
-
-    // ====== LÍNEAS ======
-    var measuring = false;
-    var startPoint = null;
-    var tempLine = null;
-
-    var lines = [];
-    var lineCounter = 0;
-    var highlightedLine = null;
-    var highlightedLineItem = null;
-
-    var lineListDiv = document.getElementById('line-list');
-
-    function clearLineHighlight() {
-      if (highlightedLine) {
-        highlightedLine.polyline.setStyle({ color: '#ff0000', weight: 3 });
-      }
-      if (highlightedLineItem) {
-        highlightedLineItem.classList.remove('active-item');
-      }
-      highlightedLine = null;
-      highlightedLineItem = null;
-    }
-
-    function highlightLine(lineObj, listItem) {
-      clearLineHighlight();
-      highlightedLine = lineObj;
-      highlightedLineItem = listItem;
-      lineObj.polyline.setStyle({ color: '#1976d2', weight: 5 });
-      listItem.classList.add('active-item');
-    }
-
-    function addLineToSidebar(lineObj) {
-      var item = document.createElement('div');
-      item.className = 'line-item';
-
-      var text = document.createElement('div');
-      text.className = 'item-text';
-
-      var s = '';
-      s += lineObj.name + '  (L = ' + lineObj.distance.toFixed(2) + ' m)\n';
-      s += 'Ini: E ' + lineObj.utmStart.easting.toFixed(2) +
-           '  N ' + lineObj.utmStart.northing.toFixed(2) + '\n';
-      s += 'Fin: E ' + lineObj.utmEnd.easting.toFixed(2) +
-           '  N ' + lineObj.utmEnd.northing.toFixed(2);
-
-      text.textContent = s;
-
-      var btn = document.createElement('button');
-      btn.className = 'delete-btn';
-      btn.textContent = 'Eliminar';
-
-      text.onclick = function () {
-        highlightLine(lineObj, item);
-      };
-
-      btn.onclick = function (e) {
-        e.stopPropagation();
-        map.removeLayer(lineObj.polyline);
-        lines = lines.filter(function (l) { return l !== lineObj; });
-        if (highlightedLine === lineObj) clearLineHighlight();
-        item.remove();
-      };
-
-      item.appendChild(text);
-      item.appendChild(btn);
-      lineListDiv.appendChild(item);
-    }
-
-    function cancelLineDrawing() {
-      measuring = false;
-      startPoint = null;
-      if (tempLine) {
-        map.removeLayer(tempLine);
-        tempLine = null;
-      }
-    }
-
-    // ====== ÁREAS ======
-    var drawingArea = false;
-    var areaPoints = [];
-    var tempAreaLine = null;
-    var areas = [];
-    var areaCounter = 0;
-    var highlightedArea = null;
-    var highlightedAreaItem = null;
-
-    var areaListDiv = document.getElementById('area-list');
-
-    function clearAreaHighlight() {
-      if (highlightedArea) {
-        highlightedArea.poly.setStyle({ color: '#ff0000', weight: 2, fillOpacity: 0.2 });
-      }
-      if (highlightedAreaItem) highlightedAreaItem.classList.remove('active-item');
-      highlightedArea = null;
-      highlightedAreaItem = null;
-    }
-
-    function highlightArea(areaObj, listItem) {
-      clearAreaHighlight();
-      highlightedArea = areaObj;
-      highlightedAreaItem = listItem;
-      areaObj.poly.setStyle({ color: '#1976d2', weight: 3, fillOpacity: 0.25 });
-      listItem.classList.add('active-item');
-    }
-
-    function addAreaToSidebar(areaObj) {
-      var item = document.createElement('div');
-      item.className = 'area-item';
-
-      var text = document.createElement('div');
-      text.className = 'item-text';
-
-      var s = '';
-      s += areaObj.name + '  (A = ' + areaObj.area.toFixed(2) + ' m²)\n';
-
-      var verts = areaObj.verticesUTM;
-      var sides = areaObj.sideLengths;
-
-      for (var i = 0; i < verts.length; i++) {
-        var v = verts[i];
-        s += 'V' + v.index + ': E ' + v.e.toFixed(2) +
-             '  N ' + v.n.toFixed(2) + '\n';
-        s += '   L' + (i+1) + ' = ' + sides[i].toFixed(2) + ' m\n';
-      }
-
-      text.textContent = s;
-
-      var btn = document.createElement('button');
-      btn.className = 'delete-btn';
-      btn.textContent = 'Eliminar';
-
-      text.onclick = function () {
-        highlightArea(areaObj, item);
-      };
-
-      btn.onclick = function (e) {
-        e.stopPropagation();
-        map.removeLayer(areaObj.poly);
-        areas = areas.filter(function (a) { return a !== areaObj; });
-        if (highlightedArea === areaObj) clearAreaHighlight();
-        item.remove();
-      };
-
-      item.appendChild(text);
-      item.appendChild(btn);
-      areaListDiv.appendChild(item);
-    }
-
-    function cancelAreaDrawing() {
-      drawingArea = false;
-      areaPoints = [];
-      if (tempAreaLine) {
-        map.removeLayer(tempAreaLine);
-        tempAreaLine = null;
-      }
-      document.getElementById('tool-area-label').textContent = 'Área';
-    }
-
-    function areaFromLatLngs(latlngs) {
-      if (latlngs.length < 3) return 0;
-      var sum = 0;
-      var pts = latlngs.map(function (ll) {
-        var utm = latLngToUTM(ll.lat, ll.lng);
-        return { x: utm.easting, y: utm.northing };
-      });
-      for (var i = 0; i < pts.length; i++) {
-        var j = (i + 1) % pts.length;
-        sum += pts[i].x * pts[j].y - pts[j].x * pts[i].y;
-      }
-      return Math.abs(sum) / 2.0;
-    }
-
-    function sideLengthsFromLatLngs(latlngs) {
-      var lengths = [];
-      for (var i = 0; i < latlngs.length; i++) {
-        var j = (i + 1) % latlngs.length;
-        var d = map.distance(latlngs[i], latlngs[j]);
-        lengths.push(d);
-      }
-      return lengths;
-    }
-
-    function closeAreaFromButton() {
-      if (!drawingArea || areaPoints.length < 3) return;
-
-      drawingArea = false;
-      if (tempAreaLine) {
-        map.removeLayer(tempAreaLine);
-        tempAreaLine = null;
-      }
-      areaPoints.push(areaPoints[0]);
-
-      var polygon = L.polygon(areaPoints, {
-        color: '#ff0000',
-        weight: 2,
-        fillColor: '#ff0000',
-        fillOpacity: 0.2
-      }).addTo(map);
-
-      var latlngs = areaPoints.slice(0, areaPoints.length - 1);
-      var area = areaFromLatLngs(latlngs);
-      var sideLengths = sideLengthsFromLatLngs(latlngs);
-
-      var verticesUTM = latlngs.map(function (ll, i) {
-        var utm = latLngToUTM(ll.lat, ll.lng);
-        return {
-          index: i + 1,
-          e: utm.easting,
-          n: utm.northing
-        };
-      });
-
-      areaCounter += 1;
-      var areaName = 'Área ' + areaCounter;
-
-      var areaObj = {
-        name: areaName,
-        poly: polygon,
-        area: area,
-        verticesUTM: verticesUTM,
-        sideLengths: sideLengths
-      };
-      areas.push(areaObj);
-
-      addAreaToSidebar(areaObj);
-      areaPoints = [];
-      document.getElementById('tool-area-label').textContent = 'Área';
-    }
-
-    // ====== PUNTOS UTM ======
-    var points = [];
-    var pointCounter = 0;
-    var highlightedPoint = null;
-    var highlightedPointItem = null;
-
-    var pointListDiv = document.getElementById('point-list');
-
-    var defaultIcon = L.icon({
-      iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
-      iconSize: [25, 41],
-      iconAnchor: [12, 41],
-      popupAnchor: [1, -34],
-      shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
-      shadowSize: [41, 41]
-    });
-
-    var highlightIcon = L.icon({
-      iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
-      iconSize: [25, 41],
-      iconAnchor: [12, 41],
-      popupAnchor: [1, -34],
-      shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
-      shadowSize: [41, 41]
-    });
-
-    function clearPointHighlight() {
-      if (highlightedPoint) {
-        highlightedPoint.marker.setIcon(defaultIcon);
-        highlightedPoint.label.setStyle({ color: '#000' });
-      }
-      if (highlightedPointItem) highlightedPointItem.classList.remove('active-item');
-      highlightedPoint = null;
-      highlightedPointItem = null;
-    }
-
-    function highlightPoint(pointObj, listItem) {
-      clearPointHighlight();
-      highlightedPoint = pointObj;
-      highlightedPointItem = listItem;
-      pointObj.marker.setIcon(highlightIcon);
-      pointObj.label.setStyle({ color: '#1976d2' });
-      listItem.classList.add('active-item');
-    }
-
-    function addPointToSidebar(pointObj) {
-      var item = document.createElement('div');
-      item.className = 'point-item';
-
-      var text = document.createElement('div');
-      text.className = 'item-text';
-      text.innerHTML =
-        pointObj.name +
-        '\nE: ' + pointObj.utm.easting.toFixed(2) +
-        '  N: ' + pointObj.utm.northing.toFixed(2);
-
-      var btn = document.createElement('button');
-      btn.className = 'delete-btn';
-      btn.textContent = 'Eliminar';
-
-      text.onclick = function () {
-        highlightPoint(pointObj, item);
-      };
-
-      btn.onclick = function (e) {
-        e.stopPropagation();
-        map.removeLayer(pointObj.marker);
-        map.removeLayer(pointObj.label);
-        points = points.filter(function (p) { return p !== pointObj; });
-        if (highlightedPoint === pointObj) clearPointHighlight();
-        item.remove();
-      };
-
-      item.appendChild(text);
-      item.appendChild(btn);
-      pointListDiv.appendChild(item);
-    }
-
-    // ====== CLIC EN MAPA SEGÚN MODO ======
-    map.on('click', function (e) {
-      if (currentMode === 'line') {
-        if (!measuring) {
-          measuring = true;
-          startPoint = e.latlng;
-          if (tempLine) map.removeLayer(tempLine);
-          tempLine = L.polyline([startPoint, startPoint], { color: '#ff0000', weight: 3 }).addTo(map);
-        } else {
-          measuring = false;
-          tempLine.setLatLngs([startPoint, e.latlng]);
-
-          var d = map.distance(startPoint, e.latlng);
-          lineCounter += 1;
-          var lineName = 'Línea ' + lineCounter;
-
-          var finalLine = L.polyline([startPoint, e.latlng], { color: '#ff0000', weight: 3 }).addTo(map);
-
-          var utmStart = latLngToUTM(startPoint.lat, startPoint.lng);
-          var utmEnd   = latLngToUTM(e.latlng.lat, e.latlng.lng);
-
-          var lineObj = {
-            name: lineName,
-            distance: d,
-            polyline: finalLine,
-            startLatLng: startPoint,
-            endLatLng: e.latlng,
-            utmStart: utmStart,
-            utmEnd: utmEnd
-          };
-          lines.push(lineObj);
-
-          addLineToSidebar(lineObj);
-
-          map.removeLayer(tempLine);
-          tempLine = null;
-          startPoint = null;
-        }
-      } else if (currentMode === 'area') {
-        if (!drawingArea) {
-          drawingArea = true;
-          areaPoints = [e.latlng];
-          tempAreaLine = L.polyline(areaPoints, { color: '#ff0000', weight: 2 }).addTo(map);
-        } else {
-          areaPoints.push(e.latlng);
-          tempAreaLine.setLatLngs(areaPoints);
-        }
-        if (areaPoints.length >= 3) {
-          document.getElementById('tool-area-label').textContent = 'Cerrar área';
-        }
-      } else if (currentMode === 'point') {
-        var lat = e.latlng.lat;
-        var lng = e.latlng.lng;
-        var utm = latLngToUTM(lat, lng);
-
-        pointCounter += 1;
-        var pointName = String(pointCounter);
-
-        var marker = L.marker(e.latlng, { icon: defaultIcon }).addTo(map);
-
-        var label = L.marker(e.latlng, {
-          icon: L.divIcon({
-            className: '',
-            html: '<div style="position: relative; transform: translate(-50%, -200%);' +
-                  'font-size: 20px; font-weight: bold; color: #000;' +
-                  'text-shadow: 0 0 3px #fff, 0 0 3px #fff;">' +
-                  pointName + '</div>',
-            iconSize: [0, 0],
-            iconAnchor: [0, 0]
-          })
-        }).addTo(map);
-
-        var pointObj = {
-          name: 'Punto ' + pointName,
-          latlng: e.latlng,
-          utm: utm,
-          marker: marker,
-          label: label
-        };
-        points.push(pointObj);
-
-        addPointToSidebar(pointObj);
-      }
-    });
-  </script>
+</script>
 </body>
 </html>
