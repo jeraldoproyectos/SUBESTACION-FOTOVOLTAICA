@@ -1,314 +1,408 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>SUBESTACION FOTOVOLTAICA</title>
-    <meta charset="utf-8" />
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <style>
-        body { margin: 0; padding: 0; background: #1a1a1a; font-family: 'Segoe UI', sans-serif; overflow: hidden; }
-        #map { height: 100vh; width: 100%; cursor: crosshair; }
-        
-        .brand-logo {
-            position: absolute; bottom: 20px; left: 20px; z-index: 2500;
-            width: 150px; filter: drop-shadow(0 2px 5px rgba(0,0,0,0.7));
-            pointer-events: none;
-        }
-        .corner-logo {
-            position: absolute;
-            top: 15px;
-            right: 15px;
-            z-index: 2500;
-            width: 80px;
-            pointer-events: none;
-        }
+  <meta charset="utf-8" />
+  <title>SUBESTACION FOTOVOLTAICA</title>
 
-        .ui-container {
-            position: absolute; bottom: 25px; left: 50%; transform: translateX(-50%);
-            width: 25%; min-width: 220px; z-index: 2000;
-            display: flex; flex-direction: column; align-items: center; gap: 8px;
-        }
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 
-        .utm-box {
-            background: rgba(0,0,0,0.9); color: #00ff00; padding: 5px 12px;
-            border-radius: 4px; border: 1px solid #444; font-family: monospace;
-            font-size: 11px; font-weight: bold;
-        }
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background: #1a1a1a;
+      font-family: "Segoe UI", sans-serif;
+      overflow: hidden;
+    }
 
-        .slider-wrapper {
-            background: rgba(0,0,0,0.9); padding: 9px 11px; border-radius: 6px;
-            width: 100%; border: 1px solid #333; text-align: center;
-        }
+    #map {
+      height: 100vh;
+      width: 100%;
+      cursor: crosshair;
+    }
 
-        .current-date-label { 
-            display: inline-block; color: #00ff00; font-size: 11px; font-weight: bold;
-            border: 1px solid #00ff00; padding: 1.5px 6px; border-radius: 3px;
-            margin-bottom: 6px; background: rgba(0, 255, 0, 0.05);
-        }
+    .brand-logo {
+      position: absolute;
+      bottom: 20px;
+      left: 20px;
+      z-index: 2500;
+      width: 150px;
+      filter: drop-shadow(0 2px 5px rgba(0,0,0,0.7));
+      pointer-events: none;
+    }
 
-        .date-active { background: #00ff00 !important; color: #000 !important; }
-        input[type=range] { width: 100%; cursor: pointer; accent-color: #00ff00; height: 3px; }
+    .corner-logo {
+      position: absolute;
+      top: 15px;
+      right: 15px;
+      z-index: 2500;
+      width: 80px;
+      pointer-events: none;
+    }
 
-        /* ===== Panel lateral herramientas ===== */
-        #sidebar {
-          position: fixed;
-          left: 0;
-          top: 0;
-          bottom: 0;
-          width: 340px;
-          background: #f5f5f5;
-          border-right: 1px solid #ccc;
-          padding: 10px;
-          box-sizing: border-box;
-          overflow-y: auto;
-          z-index: 3000;
-          color:#000;
-        }
+    .ui-container {
+      position: absolute;
+      bottom: 25px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 25%;
+      min-width: 220px;
+      z-index: 2000;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+    }
 
-        #toolbar {
-          position: absolute;
-          top: 15px;
-          left: 360px;
-          height: 48px;
-          background: rgba(255,255,255,0.95);
-          border: 1px solid #ccc;
-          border-radius: 6px;
-          display:flex;
-          align-items:center;
-          padding: 4px 8px;
-          gap: 8px;
-          z-index: 3001;
-        }
+    .utm-box {
+      background: rgba(0, 0, 0, 0.9);
+      color: #00ff00;
+      padding: 5px 12px;
+      border-radius: 4px;
+      border: 1px solid #444;
+      font-family: monospace;
+      font-size: 11px;
+      font-weight: bold;
+    }
 
-        .tool-btn {
-          flex:0 0 auto;
-          display:flex;
-          align-items:center;
-          justify-content:center;
-          gap:4px;
-          padding:6px 10px;
-          border-radius:6px;
-          border:1px solid #ccc;
-          background:#fafafa;
-          cursor:pointer;
-          font-size:12px;
-          color:#333;
-          user-select:none;
-          -webkit-tap-highlight-color: transparent;
-        }
-        .tool-btn span.icon {
-          font-size:18px;
-          line-height:1;
-        }
-        .tool-btn.active {
-          background:#1976d2;
-          border-color:#125a9c;
-          color:#fff;
-        }
+    .slider-wrapper {
+      background: rgba(0, 0, 0, 0.9);
+      padding: 9px 11px;
+      border-radius: 6px;
+      width: 100%;
+      border: 1px solid #333;
+      text-align: center;
+    }
 
-        h2 {
-          margin-top: 8px;
-          font-size: 16px;
-          color:#000;
-        }
-        .section-title {
-          margin-top: 10px;
-          margin-bottom: 4px;
-          font-size: 14px;
-          font-weight: bold;
-          border-bottom: 1px solid #ccc;
-          padding-bottom: 2px;
-          color:#000;
-        }
-        .line-item, .point-item, .area-item {
-          display: flex;
-          justify-content: space-between;
-          align-items: flex-start;
-          gap: 4px;
-          padding: 4px 0;
-          border-bottom: 1px solid #ddd;
-          font-size: 12px;
-        }
-        .item-text {
-          flex: 1;
-          cursor: pointer;
-          color:#000;
-          white-space: pre-line;
-        }
-        .item-text:hover {
-          text-decoration: underline;
-        }
-        .active-item {
-          background: #c8e6ff;
-          font-weight: bold;
-        }
-        .delete-btn {
-          font-size: 11px;
-          padding: 2px 4px;
-          cursor: pointer;
-          border: 1px solid #c00;
-          background: #fdd;
-          color: #900;
-          border-radius: 3px;
-        }
-        .delete-btn:hover {
-          background: #fbb;
-        }
-        small {
-          font-size: 11px;
-          color: #666;
-        }
+    .current-date-label {
+      display: inline-block;
+      color: #00ff00;
+      font-size: 11px;
+      font-weight: bold;
+      border: 1px solid #00ff00;
+      padding: 1.5px 6px;
+      border-radius: 3px;
+      margin-bottom: 6px;
+      background: rgba(0, 255, 0, 0.05);
+    }
 
-        @media (max-width: 900px) {
-          #sidebar { width: 260px; }
-          #toolbar { left: 280px; }
-          .tool-btn span.label { display:none; }
-        }
-    </style>
+    .date-active {
+      background: #00ff00 !important;
+      color: #000 !important;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      cursor: pointer;
+      accent-color: #00ff00;
+      height: 3px;
+    }
+
+    /* ======= PANEL LATERAL DE HERRAMIENTAS ======= */
+
+    #sidebar {
+      position: fixed;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 340px;
+      background: #f5f5f5;
+      border-right: 1px solid #ccc;
+      padding: 10px;
+      box-sizing: border-box;
+      overflow-y: auto;
+      z-index: 3000;
+      color:#000;
+    }
+
+    #map-container {
+      position: absolute;
+      left: 340px;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      display:flex;
+      flex-direction:column;
+      pointer-events: none; /* sólo evita que el contenedor bloquee; el mapa sigue activo */
+    }
+
+    #toolbar {
+      position: absolute;
+      top: 10px;
+      left: 360px;
+      height: 48px;
+      background: rgba(255,255,255,0.95);
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      display:flex;
+      align-items:center;
+      padding: 4px 8px;
+      gap: 8px;
+      z-index: 3001;
+      pointer-events: auto;
+    }
+
+    .tool-btn {
+      flex:0 0 auto;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      gap:4px;
+      padding:6px 10px;
+      border-radius:6px;
+      border:1px solid #ccc;
+      background:#fafafa;
+      cursor:pointer;
+      font-size:12px;
+      color:#333;
+      user-select:none;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .tool-btn span.icon {
+      font-size:18px;
+      line-height:1;
+    }
+    .tool-btn.active {
+      background:#1976d2;
+      border-color:#125a9c;
+      color:#fff;
+    }
+
+    h2 {
+      margin-top: 8px;
+      font-size: 16px;
+      color:#000;
+    }
+    .section-title {
+      margin-top: 10px;
+      margin-bottom: 4px;
+      font-size: 14px;
+      font-weight: bold;
+      border-bottom: 1px solid #ccc;
+      padding-bottom: 2px;
+      color:#000;
+    }
+    .line-item, .point-item, .area-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 4px;
+      padding: 4px 0;
+      border-bottom: 1px solid #ddd;
+      font-size: 12px;
+    }
+    .item-text {
+      flex: 1;
+      cursor: pointer;
+      color:#000;
+      white-space: pre-line;
+    }
+    .item-text:hover {
+      text-decoration: underline;
+    }
+    .active-item {
+      background: #c8e6ff;
+      font-weight: bold;
+    }
+    .delete-btn {
+      font-size: 11px;
+      padding: 2px 4px;
+      cursor: pointer;
+      border: 1px solid #c00;
+      background: #fdd;
+      color: #900;
+      border-radius: 3px;
+    }
+    .delete-btn:hover {
+      background: #fbb;
+    }
+    small {
+      font-size: 11px;
+      color: #666;
+    }
+
+    @media (max-width: 900px) {
+      #sidebar {
+        width: 260px;
+      }
+      #toolbar {
+        left: 280px;
+      }
+      .tool-btn span.label {
+        display:none;
+      }
+    }
+  </style>
 </head>
 <body>
 
-<img src="logo.jpg" class="brand-logo" alt="Logo SUBESTACION FOTOVOLTAICA">
-<img src="pngegg.png" class="corner-logo" alt="Logo esquina">
+  <!-- LOGOS -->
+  <img src="logo.jpg" class="brand-logo" alt="Logo SUBESTACION FOTOVOLTAICA">
+  <img src="pngegg.png" class="corner-logo" alt="Logo esquina">
 
-<div id="map"></div>
+  <!-- MAPA -->
+  <div id="map"></div>
 
-<div class="ui-container">
-    <div class="utm-box" id="utm-coord">E: --- | N: ---</div>
+  <!-- UI UTM + SLIDER -->
+  <div class="ui-container">
+    <div class="utm-box" id="utm-coord">E ---  N ---</div>
     <div class="slider-wrapper">
-        <div id="fecha-label" class="current-date-label">CARGANDO...</div>
-        <input type="range" id="smooth-slider" min="0" value="0" step="1">        
+      <div id="fecha-label" class="current-date-label">CARGANDO...</div>
+      <input type="range" id="smooth-slider" min="0" value="0" step="1">
     </div>
-</div>
-
-<!-- PANEL LATERAL HERRAMIENTAS -->
-<div id="sidebar">
-  <h2>Panel de control</h2>
-
-  <div class="section-title">Líneas medidas</div>
-  <div id="line-list">
-    <small>Botón regla y dos toques en el mapa para crear una línea.</small>
   </div>
 
-  <div class="section-title">Áreas medidas</div>
-  <div id="area-list">
-    <small>Botón área para agregar vértices y luego “Cerrar área”.</small>
+  <!-- PANEL LATERAL DE MEDICIÓN -->
+  <div id="sidebar">
+    <h2>Panel de control</h2>
+
+    <div class="section-title">Líneas medidas</div>
+    <div id="line-list">
+      <small>Botón regla y dos toques en el mapa para crear una línea.</small>
+    </div>
+
+    <div class="section-title">Áreas medidas</div>
+    <div id="area-list">
+      <small>Botón área para agregar vértices y luego “Cerrar área”.</small>
+    </div>
+
+    <div class="section-title">Ubicaciones (UTM)</div>
+    <div id="point-list">
+      <small>Botón punto y toque en el mapa para agregar una ubicación.</small>
+    </div>
   </div>
 
-  <div class="section-title">Ubicaciones (UTM)</div>
-  <div id="point-list">
-    <small>Botón punto y toque en el mapa para agregar una ubicación.</small>
+  <!-- TOOLBAR SUPERIOR -->
+  <div id="toolbar">
+    <div class="tool-btn" id="tool-line">
+      <span class="icon">📏</span><span class="label">Línea</span>
+    </div>
+    <div class="tool-btn" id="tool-area">
+      <span class="icon">🔺</span><span class="label" id="tool-area-label">Área</span>
+    </div>
+    <div class="tool-btn" id="tool-point">
+      <span class="icon">📍</span><span class="label">Punto</span>
+    </div>
+    <div class="tool-btn" id="tool-cancel">
+      <span class="icon">❌</span><span class="label">Cancelar</span>
+    </div>
   </div>
-</div>
 
-<!-- TOOLBAR -->
-<div id="toolbar">
-  <div class="tool-btn" id="tool-line">
-    <span class="icon">📏</span><span class="label">Línea</span>
-  </div>
-  <div class="tool-btn" id="tool-area">
-    <span class="icon">🔺</span><span class="label" id="tool-area-label">Área</span>
-  </div>
-  <div class="tool-btn" id="tool-point">
-    <span class="icon">📍</span><span class="label">Punto</span>
-  </div>
-  <div class="tool-btn" id="tool-cancel">
-    <span class="icon">❌</span><span class="label">Cancelar</span>
-  </div>
-</div>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.9.0/proj4.js"></script>
 
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.9.0/proj4.js"></script>
+  <script>
+    // ===== PROYECCIONES =====
+    var utm19S = '+proj=utm +zone=19 +south +datum=WGS84 +units=m +no_defs';
+    var wgs84 = '+proj=longlat +datum=WGS84 +no_defs';
 
-<script>
-    // Proyecciones UTM 19S y WGS84
-    var utm19S = "+proj=utm +zone=19 +south +datum=WGS84 +units=m +no_defs";
-    var wgs84 = "+proj=longlat +datum=WGS84 +no_defs";
+    // ===== MAPA BASE =====
+    var map = L.map('map', {
+      zoomControl: false,
+      minZoom: 18,
+      maxZoom: 23
+    }).setView([-20.351387, -69.721985], 19);
 
-    // Mapa base
-    var map = L.map('map', { zoomControl: false, minZoom: 18, maxZoom: 23 })
-              .setView([-20.351387, -69.721985], 19);
-
-    // Ortofoto base de Google
     L.tileLayer('https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
-        maxZoom: 23
+      maxZoom: 23
     }).addTo(map);
 
-    // Pane para fundaciones
+    // Pane para el plano de fundaciones
     map.createPane('planoPane');
     map.getPane('planoPane').style.zIndex = 1000;
     map.getPane('planoPane').style.pointerEvents = 'none';
 
+    // Coordenadas de la imagen de fundaciones
     var imageBounds = [
-        [-20.3519680745, -69.7226506296],
-        [-20.3506811321, -69.7212255524]
+      [-20.3519680745, -69.7226506296],
+      [-20.3506811321, -69.7212255524]
     ];
 
     L.imageOverlay('fundaciones.png', imageBounds, {
-        pane: 'planoPane',
-        opacity: 0.9,
-        interactive: false
+      pane: 'planoPane',
+      opacity: 0.9,
+      interactive: false
     }).addTo(map);
 
-    // Coordenadas UTM bajo el mouse
+    // ===== COORDENADAS UTM BAJO EL MOUSE =====
     map.on('mousemove', function(e) {
-        var p = proj4(wgs84, utm19S, [e.latlng.lng, e.latlng.lat]);
-        document.getElementById('utm-coord').innerHTML =
-            'E: ' + p[0].toFixed(2) + ' | N: ' + p[1].toFixed(2);
+      var p = proj4(wgs84, utm19S, [e.latlng.lng, e.latlng.lat]);
+      document.getElementById('utm-coord').innerHTML =
+        'E ' + p[0].toFixed(2) + '  N ' + p[1].toFixed(2);
     });
 
-    // Fechas ortofotos
-    var fechas = ["03/12/2025", "09/01/2026", "21/01/2026", "23/01/2026", "28/01/2026"];
+    // ===== SLIDER DE ORTOFOTOS =====
+    var fechas = [
+      '03-12-2025',
+      '09-01-2026',
+      '21-01-2026',
+      '23-01-2026',
+      '28-01-2026'
+    ];
 
-    // Capas raster XYZ (ajusta rutas)
     var capas = [
-        L.tileLayer('03122025/Z{z}/{y}/{x}.png', { maxZoom: 23, opacity: 1 }).addTo(map),
-        L.tileLayer('09012026/Z{z}/{y}/{x}.png', { maxZoom: 23, opacity: 0 }).addTo(map),
-        L.tileLayer('21012026/Z{z}/{y}/{x}.png', { maxZoom: 23, opacity: 0 }).addTo(map),
-        L.tileLayer('23012026/Z{z}/{y}/{x}.png', { maxZoom: 23, opacity: 0 }).addTo(map),
-        L.tileLayer('28012026/Z{z}/{y}/{x}.png', { maxZoom: 23, opacity: 0 }).addTo(map)
+      L.tileLayer('03122025/{z}/{y}/{x}.png', { maxZoom: 23, opacity: 1 }).addTo(map),
+      L.tileLayer('09012026/{z}/{y}/{x}.png', { maxZoom: 23, opacity: 0 }).addTo(map),
+      L.tileLayer('21012026/{z}/{y}/{x}.png', { maxZoom: 23, opacity: 0 }).addTo(map),
+      L.tileLayer('23012026/{z}/{y}/{x}.png', { maxZoom: 23, opacity: 0 }).addTo(map),
+      L.tileLayer('28012026/{z}/{y}/{x}.png', { maxZoom: 23, opacity: 0 }).addTo(map)
     ];
 
     var slider = document.getElementById('smooth-slider');
     var label = document.getElementById('fecha-label');
+
     slider.max = (capas.length - 1) * 100;
 
     function updateView() {
-        var val = parseFloat(slider.value);
-        var snappingPoint = Math.round(val / 100) * 100;
-        if (Math.abs(val - snappingPoint) < 12) { val = snappingPoint; }
+      var val = parseFloat(slider.value);
+      var snappingPoint = Math.round(val / 100) * 100;
+      if (Math.abs(val - snappingPoint) < 12) {
+        val = snappingPoint;
+      }
 
-        var index = Math.floor(val / 100);
-        var subVal = (val % 100) / 100;
-        if (index >= capas.length - 1) { index = capas.length - 2; subVal = 1; }
-        
-        capas.forEach(function(c, i) {
-            if (i === index) c.setOpacity(1 - subVal);
-            else if (i === index + 1) c.setOpacity(subVal);
-            else c.setOpacity(0);
-        });
-        
-        var fechaActual = (subVal > 0.5) ? fechas[index + 1] : fechas[index];
-        label.innerText = fechaActual;
+      var index = Math.floor(val / 100);
+      var subVal = (val % 100) / 100;
 
-        if (subVal === 0 || subVal === 1) label.classList.add('date-active');
-        else label.classList.remove('date-active');
+      if (index >= capas.length - 1) {
+        index = capas.length - 2;
+        subVal = 1;
+      }
+
+      capas.forEach(function(c, i) {
+        if (i === index) {
+          c.setOpacity(1 - subVal);
+        } else if (i === index + 1) {
+          c.setOpacity(subVal);
+        } else {
+          c.setOpacity(0);
+        }
+      });
+
+      var fechaActual = subVal < 0.5 ? fechas[index] : fechas[index + 1];
+      label.innerText = fechaActual;
+
+      if (subVal === 0 || subVal === 1) {
+        label.classList.add('date-active');
+      } else {
+        label.classList.remove('date-active');
+      }
     }
 
     slider.addEventListener('input', updateView);
     slider.addEventListener('change', function() {
-        this.value = Math.round(this.value / 100) * 100;
-        updateView();
+      this.value = Math.round(this.value / 100) * 100;
+      updateView();
     });
 
     updateView();
 
-    // ======= UTILIDAD UTM PARA HERRAMIENTAS =======
+    // ====== FUNCIONES UTM PARA HERRAMIENTAS ======
     function latLngToUTM(lat, lng) {
       var utm = proj4(wgs84, utm19S, [lng, lat]);
       return { easting: utm[0], northing: utm[1] };
     }
 
-    // ===== MODOS HERRAMIENTAS =====
+    // ===== MODOS DE HERRAMIENTA =====
     var currentMode = null; // 'line' | 'area' | 'point' | null
 
     function setMode(mode) {
@@ -362,7 +456,7 @@
       setMode(null);
     };
 
-    // ===== LÍNEAS =====
+    // ====== LÍNEAS ======
     var measuring = false;
     var startPoint = null;
     var tempLine = null;
@@ -439,7 +533,7 @@
       }
     }
 
-    // ===== ÁREAS =====
+    // ====== ÁREAS ======
     var drawingArea = false;
     var areaPoints = [];
     var tempAreaLine = null;
@@ -591,7 +685,7 @@
       document.getElementById('tool-area-label').textContent = 'Área';
     }
 
-    // ===== PUNTOS UTM =====
+    // ====== PUNTOS UTM ======
     var points = [];
     var pointCounter = 0;
     var highlightedPoint = null;
@@ -669,7 +763,7 @@
       pointListDiv.appendChild(item);
     }
 
-    // ===== CLIC EN MAPA SEGÚN MODO =====
+    // ====== CLIC EN MAPA SEGÚN MODO ======
     map.on('click', function (e) {
       if (currentMode === 'line') {
         if (!measuring) {
@@ -753,6 +847,6 @@
         addPointToSidebar(pointObj);
       }
     });
-</script>
+  </script>
 </body>
 </html>
