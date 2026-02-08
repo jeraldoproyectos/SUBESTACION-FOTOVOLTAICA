@@ -209,28 +209,28 @@
     <!-- Línea -->
     <div class="tool-btn" id="tool-line" title="Línea">
         <svg viewBox="0 0 24 24" fill="none">
-            <rect x="3" y="10.5" width="18" height="3" rx="1.5" stroke-width="1.8" />
+            <line x1="3" y1="12" x2="21" y2="12" stroke-width="1.8" />
         </svg>
     </div>
 
     <!-- Área -->
     <div class="tool-btn" id="tool-area" title="Área">
         <svg viewBox="0 0 24 24" fill="none">
-            <polygon points="5,7 17,7 19,17 7,17" stroke-width="1.8" fill="none" />
+            <polygon points="12,4 18,12 12,20 6,12" stroke-width="1.8" fill="none" />
         </svg>
     </div>
 
     <!-- Punto -->
     <div class="tool-btn" id="tool-point" title="Punto">
         <svg viewBox="0 0 24 24" fill="none">
-            <circle cx="12" cy="10" r="3" stroke-width="1.8" fill="white" />
+            <path d="M12 2C7.58 2 4 5.58 4 10c0 5.25 8 13 8 13s8-7.75 8-13c0-4.42-3.58-8-8-8zm0 11c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3z" stroke-width="1.8" fill="white" />
         </svg>
     </div>
 
     <!-- Editar vértices -->
     <div class="tool-btn" id="tool-edit" title="Editar vértices">
         <svg viewBox="0 0 24 24" fill="none">
-            <path d="M5 19L6 15L15 6L18 9L9 18L5 19Z" stroke-width="1.8" fill="white" />
+            <path d="M5 19L6 15L15 6L18 9L9<path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25z" stroke-width="1.8" fill="white" />
         </svg>
     </div>
 
@@ -501,8 +501,9 @@
             item.remove();
             buildEditMarkers();
         };
+                item.appendChild(text);
 
-        item.appendChild(text);
+
         item.appendChild(btn);
         lineListDiv.appendChild(item);
         lineObj.listItem = item;
@@ -613,8 +614,8 @@
             item.remove();
             buildEditMarkers();
         };
+                item.appendChild(text);
 
-        item.appendChild(text);
         item.appendChild(btn);
         areaListDiv.appendChild(item);
         areaObj.listItem = item;
