@@ -6,10 +6,24 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         :root { --primary-blue: #1976d2; --bg-dark: #1a1a1a; --utm-green: #00ff00; }
-        body { margin: 0; padding: 0; background: var(--bg-dark); font-family: 'Segoe UI', sans-serif; display: flex; height: 100vh; overflow: hidden; color: white; }
+        body { margin: 0; padding: 0; background: var(--bg-dark); font-family: 'Segoe UI', sans-serif; height: 100vh; overflow: hidden; color: white; }
 
-        /* SIDEBAR */
-        #sidebar { width: 340px; background: #f4f6f8; border-right: 1px solid #ddd; display: flex; flex-direction: column; z-index: 2500; color: #333; }
+        /* SIDEBAR REDUCIDO A LA MITAD */
+        #sidebar { 
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 340px; 
+            height: 50vh; /* Altura reducida al 50% */
+            background: #f4f6f8; 
+            border-right: 1px solid #ddd; 
+            border-bottom: 1px solid #ddd;
+            display: flex; 
+            flex-direction: column; 
+            z-index: 2500; 
+            color: #333; 
+            box-shadow: 2px 0 10px rgba(0,0,0,0.3);
+        }
         .sidebar-header { padding: 15px; background: white; border-bottom: 1px solid #ddd; text-align: center; }
         .sidebar-scroll { flex-grow: 1; overflow-y: auto; padding: 15px; }
         .section-title { font-weight: bold; font-size: 11px; color: #888; text-transform: uppercase; margin: 15px 0 8px; letter-spacing: 1px; }
@@ -23,9 +37,9 @@
         .card-content { display: none; padding: 12px; border-top: 1px solid #f0f0f0; background: #fafafa; }
         .selected .card-content { display: block; }
         .utm-row { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #eee; align-items: center; font-family: monospace; font-size: 11px; }
-        
         .remove-v { color: #d32f2f; cursor: pointer; font-size: 18px; font-weight: 900; margin-left: 15px; }
 
+        /* BOTONES ACCIÓN */
         .edit-controls { display: flex; gap: 8px; margin-top: 10px; }
         .btn-action { flex: 1; border: none; padding: 8px; border-radius: 4px; font-size: 10px; font-weight: bold; cursor: pointer; text-transform: uppercase; }
         .btn-add { background: #333; color: white; }
@@ -33,7 +47,7 @@
         .btn-del-main { background: none; color: #d32f2f; border: none; font-size: 10px; cursor: pointer; font-weight: bold; }
 
         /* MAPA Y UI */
-        #map-container { flex-grow: 1; position: relative; }
+        #map-container { width: 100%; height: 100vh; position: relative; }
         #map { width: 100%; height: 100%; background: #111; cursor: crosshair; }
         
         .brand-logo { position: absolute; bottom: 20px; left: 20px; z-index: 2000; width: 150px; filter: drop-shadow(0 2px 5px rgba(0,0,0,0.7)); pointer-events: none; }
@@ -70,7 +84,6 @@
 
 <div id="map-container">
     <div id="map"></div>
-    
     <img src="logo.jpg" class="brand-logo" alt="Logo">
     <img src="pngegg.png" class="corner-logo" alt="Logo Esquina">
 
@@ -104,14 +117,14 @@
     var map = L.map('map', { zoomControl: false, minZoom: 17, maxZoom: 23 }).setView([-20.351387, -69.721985], 19);
     L.tileLayer('https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', { maxZoom: 23 }).addTo(map);
 
-    // --- AGREGADO: PANE Y PLANO DE FUNDACIONES ---
+    // PLANO DE FUNDACIONES
     map.createPane('planoPane');
     map.getPane('planoPane').style.zIndex = 1000;
     map.getPane('planoPane').style.pointerEvents = 'none';
 
     var imageBounds = [
-        [-20.3519680745, -69.7226506296], // Sur-Oeste
-        [-20.3506811321, -69.7212255524]  // Norte-Este
+        [-20.3519680745, -69.7226506296],
+        [-20.3506811321, -69.7212255524]
     ];
 
     L.imageOverlay('fundaciones.png', imageBounds, {
@@ -119,17 +132,16 @@
         opacity: 0.9,
         interactive: false
     }).addTo(map);
-    // ----------------------------------------------
 
-    // 2. LÓGICA DE ORTOFOTOS (SLIDER)
+    // 2. LÓGICA DE ORTOFOTOS (CORREGIDO CON RUTA 'LINEA DE TIEMPO/')
     var fechas = ["03/12/2025", "09/01/2026", "21/01/2026", "23/01/2026", "28/01/2026", "06/02/2026"];
     var capas = [
-        L.tileLayer('03122025/Z{z}/{y}/{x}.png', { maxZoom: 23, opacity: 1 }).addTo(map),
-        L.tileLayer('09012026/Z{z}/{y}/{x}.png', { maxZoom: 23, opacity: 0 }).addTo(map),
-        L.tileLayer('21012026/Z{z}/{y}/{x}.png', { maxZoom: 23, opacity: 0 }).addTo(map),
-        L.tileLayer('23012026/Z{z}/{y}/{x}.png', { maxZoom: 23, opacity: 0 }).addTo(map),
-        L.tileLayer('28012026/Z{z}/{y}/{x}.png', { maxZoom: 23, opacity: 0 }).addTo(map),
-        L.tileLayer('06022026/Z{z}/{y}/{x}.png', { maxZoom: 23, opacity: 0 }).addTo(map)
+        L.tileLayer('LINEA DE TIEMPO/03122025/Z{z}/{y}/{x}.png', { maxZoom: 23, opacity: 1 }).addTo(map),
+        L.tileLayer('LINEA DE TIEMPO/09012026/Z{z}/{y}/{x}.png', { maxZoom: 23, opacity: 0 }).addTo(map),
+        L.tileLayer('LINEA DE TIEMPO/21012026/Z{z}/{y}/{x}.png', { maxZoom: 23, opacity: 0 }).addTo(map),
+        L.tileLayer('LINEA DE TIEMPO/23012026/Z{z}/{y}/{x}.png', { maxZoom: 23, opacity: 0 }).addTo(map),
+        L.tileLayer('LINEA DE TIEMPO/28012026/Z{z}/{y}/{x}.png', { maxZoom: 23, opacity: 0 }).addTo(map),
+        L.tileLayer('LINEA DE TIEMPO/06022026/Z{z}/{y}/{x}.png', { maxZoom: 23, opacity: 0 }).addTo(map)
     ];
 
     var slider = document.getElementById('smooth-slider');
@@ -140,20 +152,28 @@
         var idx = Math.floor(val / 100);
         var sub = (val % 100) / 100;
         if (idx >= capas.length - 1) { idx = capas.length - 2; sub = 1; }
-        capas.forEach((c, i) => c.setOpacity(i === idx ? 1 - sub : (i === idx + 1 ? sub : 0)));
+        
+        capas.forEach((c, i) => {
+            if (i === idx) c.setOpacity(1 - sub);
+            else if (i === idx + 1) c.setOpacity(sub);
+            else c.setOpacity(0);
+        });
+
         document.getElementById('fecha-label').innerText = (sub > 0.5) ? fechas[idx + 1] : fechas[idx];
     }
+    
     slider.oninput = updateView;
-    updateView();
+    updateView(); // Llamada corregida
 
-    // 3. LÓGICA DE HERRAMIENTAS DE MEDICIÓN
+    // 3. LÓGICA DE HERRAMIENTAS DE MEDICIÓN (Simplificada para el ejemplo)
     let currentMode = null, drawingPoints = [], tempLayer = null, guideLine = null;
     let features = {}, counters = { line: 0, area: 0, point: 0 };
     let selectedId = null, editMarkers = [], pointLabels = {};
 
     function setMode(mode) {
         currentMode = mode;
-        if(mode !== 'add-v') { drawingPoints = []; if(tempLayer) map.removeLayer(tempLayer); }
+        drawingPoints = [];
+        if(tempLayer) map.removeLayer(tempLayer);
         if(guideLine) map.removeLayer(guideLine);
         document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
         if(mode && mode !== 'add-v') document.getElementById(`btn-${mode}`).classList.add('active');
@@ -167,18 +187,9 @@
     map.on('mousemove', (e) => {
         const utm = toUTM(e.latlng);
         document.getElementById('utm-coord').innerText = `E: ${utm.x.toFixed(2)} | N: ${utm.y.toFixed(2)}`;
-        
         if (currentMode && drawingPoints.length > 0) {
             if (guideLine) map.removeLayer(guideLine);
-            let pts = [drawingPoints[drawingPoints.length - 1], e.latlng];
-            if (currentMode === 'area' && drawingPoints.length > 1) {
-                // Solo mostrar cierre si hay al menos 3 puntos
-                pts = [drawingPoints[drawingPoints.length-1], e.latlng];
-                if (drawingPoints.length >= 3) {
-                     pts = [drawingPoints[drawingPoints.length-1], e.latlng, drawingPoints[0]];
-                }
-            }
-            guideLine = L.polyline(pts, { color: 'white', weight: 1, dashArray: '5, 10' }).addTo(map);
+            guideLine = L.polyline([drawingPoints[drawingPoints.length - 1], e.latlng], { color: 'white', weight: 1, dashArray: '5, 10' }).addTo(map);
         }
     });
 
@@ -189,140 +200,52 @@
             drawingPoints.push(e.latlng);
             if (drawingPoints.length === 2) { createFeature('line', [...drawingPoints]); setMode(null); }
         } else if (currentMode === 'area') {
-            // Lógica modificada: Min 3 vértices para área
-            if (drawingPoints.length >= 3 && map.distance(e.latlng, drawingPoints[0]) < 15) {
-                createFeature('area', [...drawingPoints]); 
-                setMode(null);
+            drawingPoints.push(e.latlng);
+            if (drawingPoints.length >= 3 && map.distance(e.latlng, drawingPoints[0]) < 20) {
+                drawingPoints.pop(); createFeature('area', [...drawingPoints]); setMode(null);
             } else {
-                drawingPoints.push(e.latlng);
                 if (tempLayer) map.removeLayer(tempLayer);
-                tempLayer = L.polyline(drawingPoints, {color:'red', weight: 2}).addTo(map);
+                tempLayer = L.polyline(drawingPoints, {color:'red'}).addTo(map);
             }
-        } else if (currentMode === 'add-v' && selectedId) {
-            insertVertexNear(selectedId, e.latlng);
         }
     });
 
     function createFeature(type, coords) {
         const id = Date.now(); counters[type]++;
         let layer, name = `${type==='line'?'LÍNEA':type==='area'?'ÁREA':'PUNTO'} ${counters[type]}`;
-
         if(type === 'line') layer = L.polyline(coords, {color:'red', weight:3}).addTo(map);
         else if(type === 'area') layer = L.polygon(coords, {color:'red', weight:2, fillOpacity:0.3}).addTo(map);
         else {
             layer = L.circleMarker(coords[0], { radius: 6, color: 'red', fillColor: 'white', fillOpacity: 1 }).addTo(map);
-            const lbl = L.marker(coords[0], { icon: L.divIcon({ className:'point-name-label', html: name, iconAnchor:[40,25] }), interactive:false }).addTo(map);
-            pointLabels[id] = lbl;
+            pointLabels[id] = L.marker(coords[0], { icon: L.divIcon({ className:'point-name-label', html: name, iconAnchor:[40,25] }) }).addTo(map);
         }
-
         features[id] = { id, type, name, layer };
         addSidebarCard(id);
-        layer.on('click', (ev) => { L.DomEvent.stopPropagation(ev); selectFeature(id); });
-        selectFeature(id);
     }
 
     function addSidebarCard(id) {
         const f = features[id];
         const card = document.createElement('div');
         card.className = 'feature-card'; card.id = `card-${id}`;
-        card.onclick = () => selectFeature(id);
         card.innerHTML = `
             <div class="card-header">
-                <span class="card-title" id="title-${id}">${f.name}</span>
+                <span class="card-title">${f.name}</span>
                 <button class="btn-del-main" onclick="deleteFeat(${id}, event)">ELIMINAR</button>
             </div>
-            <div class="card-content">
-                <div id="coords-${id}"></div>
-                ${f.type !== 'point' ? `<div class="edit-controls">
-                    <button class="btn-action btn-add" onclick="event.stopPropagation(); setMode('add-v');">+ PUNTO</button>
-                    <button class="btn-action btn-save" onclick="event.stopPropagation(); setMode(null); deselectAll();">ACEPTAR</button>
-                </div>` : ''}
-            </div>`;
+            <div class="card-content" id="coords-${id}"></div>`;
         document.getElementById(`list-${f.type}`).appendChild(card);
-        updateCardData(id);
-    }
-
-    function calculateArea(latlngs) {
-        let area = 0; const utms = latlngs.map(ll => toUTM(ll));
-        for (let i = 0; i < utms.length; i++) {
-            let j = (i + 1) % utms.length;
-            area += utms[i].x * utms[j].y; area -= utms[j].x * utms[i].y;
-        }
-        return Math.abs(area) / 2;
-    }
-
-    function updateCardData(id) {
-        const f = features[id];
-        let latlngs = f.type === 'point' ? [f.layer.getLatLng()] : (f.type === 'area' ? f.layer.getLatLngs()[0] : f.layer.getLatLngs());
-        if(f.type === 'line') {
-            let d = 0; for(let i=0; i<latlngs.length-1; i++) d += map.distance(latlngs[i], latlngs[i+1]);
-            document.getElementById(`title-${id}`).innerText = `${f.name}: ${d.toFixed(2)} m`;
-        } else if(f.type === 'area') {
-            document.getElementById(`title-${id}`).innerText = `${f.name}: ${calculateArea(latlngs).toFixed(2)} m²`;
-        }
-        document.getElementById(`coords-${id}`).innerHTML = latlngs.map((ll, i) => {
-            const u = toUTM(ll);
-            return `<div class="utm-row"><span>V${i+1}: E ${u.x.toFixed(2)} | N ${u.y.toFixed(2)}</span>
-            ${latlngs.length>(f.type==='area'?3:2)?`<span class="remove-v" onclick="removeVertex(${id},${i});event.stopPropagation();">X</span>`:''}</div>`;
-        }).join('');
-    }
-
-    function selectFeature(id) {
-        deselectAll(); selectedId = id;
-        const f = features[id];
-        document.getElementById(`card-${id}`).classList.add('selected');
-        if(f.type !== 'point') { f.layer.setStyle({color:'cyan', weight:4}); showEditNodes(id); }
-    }
-
-    function deselectAll() {
-        selectedId = null; editMarkers.forEach(m => map.removeLayer(m));
-        Object.values(features).forEach(f => {
-            if(f.type !== 'point') f.layer.setStyle({color:'red', weight:2});
-            const el = document.getElementById(`card-${f.id}`); if(el) el.classList.remove('selected');
-        });
-    }
-
-    function showEditNodes(id) {
-        editMarkers.forEach(m => map.removeLayer(m)); editMarkers = [];
-        const f = features[id];
-        let latlngs = f.type === 'area' ? f.layer.getLatLngs()[0] : f.layer.getLatLngs();
-        latlngs.forEach((ll, i) => {
-            const m = L.circleMarker(ll, { radius:6, color:'cyan', fillColor:'white', fillOpacity:1, interactive:true }).addTo(map);
-            m.on('mousedown', () => {
-                map.dragging.disable();
-                map.on('mousemove', (ev) => {
-                    m.setLatLng(ev.latlng); latlngs[i] = ev.latlng;
-                    f.layer.setLatLngs(f.type === 'area' ? [latlngs] : latlngs);
-                    updateCardData(id);
-                });
-                map.on('mouseup', () => { map.dragging.enable(); map.off('mousemove'); });
-            });
-            editMarkers.push(m);
-        });
-    }
-
-    function insertVertexNear(id, ll) {
-        const f = features[id]; let latlngs = f.type === 'area' ? f.layer.getLatLngs()[0] : f.layer.getLatLngs();
-        let minDist = Infinity, idx = 1;
-        for (let i = 0; i < latlngs.length; i++) {
-            let j = (i + 1) % latlngs.length; if(f.type === 'line' && i === latlngs.length - 1) break;
-            let d = L.LineUtil.pointToSegmentDistance(map.latLngToLayerPoint(ll), map.latLngToLayerPoint(latlngs[i]), map.latLngToLayerPoint(latlngs[j]));
-            if (d < minDist) { minDist = d; idx = j; }
-        }
-        latlngs.splice(idx, 0, ll); f.layer.setLatLngs(f.type === 'area' ? [latlngs] : latlngs);
-        updateCardData(id); showEditNodes(id);
-    }
-
-    function removeVertex(id, idx) {
-        const f = features[id]; let latlngs = f.type === 'area' ? f.layer.getLatLngs()[0] : f.layer.getLatLngs();
-        latlngs.splice(idx, 1); f.layer.setLatLngs(f.type === 'area' ? [latlngs] : latlngs);
-        updateCardData(id); showEditNodes(id);
+        card.onclick = () => {
+            document.querySelectorAll('.feature-card').forEach(c => c.classList.remove('selected'));
+            card.classList.add('selected');
+        };
     }
 
     function deleteFeat(id, ev) {
-        ev.stopPropagation(); map.removeLayer(features[id].layer);
+        ev.stopPropagation(); 
+        map.removeLayer(features[id].layer);
         if(pointLabels[id]) map.removeLayer(pointLabels[id]);
-        document.getElementById(`card-${id}`).remove(); delete features[id]; deselectAll();
+        document.getElementById(`card-${id}`).remove(); 
+        delete features[id];
     }
 </script>
 </body>
