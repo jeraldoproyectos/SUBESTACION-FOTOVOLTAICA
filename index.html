@@ -24,7 +24,6 @@
         .selected .card-content { display: block; }
         .utm-row { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #eee; align-items: center; font-family: monospace; font-size: 11px; }
         
-        /* X GIGANTE */
         .remove-v { color: #d32f2f; cursor: pointer; font-size: 18px; font-weight: 900; margin-left: 15px; }
 
         .edit-controls { display: flex; gap: 8px; margin-top: 10px; }
@@ -46,7 +45,6 @@
         .current-date-label { color: var(--utm-green); font-size: 11px; font-weight: bold; border: 1px solid var(--utm-green); padding: 2px 8px; border-radius: 4px; margin-bottom: 6px; display: inline-block; }
         input[type=range] { width: 100%; accent-color: var(--utm-green); cursor: pointer; }
 
-        /* TOOLBAR DERECHA */
         #toolbar { position: absolute; right: 15px; top: 50%; transform: translateY(-50%); z-index: 2000; display: flex; flex-direction: column; gap: 10px; }
         .tool-btn { width: 44px; height: 44px; background: white; border-radius: 10px; border: 1px solid #ccc; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 6px rgba(0,0,0,0.3); }
         .tool-btn.active { background: var(--primary-blue); border-color: white; }
@@ -106,6 +104,23 @@
     var map = L.map('map', { zoomControl: false, minZoom: 17, maxZoom: 23 }).setView([-20.351387, -69.721985], 19);
     L.tileLayer('https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', { maxZoom: 23 }).addTo(map);
 
+    // --- AGREGADO: PANE Y PLANO DE FUNDACIONES ---
+    map.createPane('planoPane');
+    map.getPane('planoPane').style.zIndex = 1000;
+    map.getPane('planoPane').style.pointerEvents = 'none';
+
+    var imageBounds = [
+        [-20.3519680745, -69.7226506296], // Sur-Oeste
+        [-20.3506811321, -69.7212255524]  // Norte-Este
+    ];
+
+    L.imageOverlay('fundaciones.png', imageBounds, {
+        pane: 'planoPane',
+        opacity: 0.9,
+        interactive: false
+    }).addTo(map);
+    // ----------------------------------------------
+
     // 2. LÓGICA DE ORTOFOTOS (SLIDER)
     var fechas = ["03/12/2025", "09/01/2026", "21/01/2026", "23/01/2026", "28/01/2026", "06/02/2026"];
     var capas = [
@@ -156,7 +171,13 @@
         if (currentMode && drawingPoints.length > 0) {
             if (guideLine) map.removeLayer(guideLine);
             let pts = [drawingPoints[drawingPoints.length - 1], e.latlng];
-            if (currentMode === 'area' && drawingPoints.length > 1) pts = [drawingPoints[drawingPoints.length-1], e.latlng, drawingPoints[0]];
+            if (currentMode === 'area' && drawingPoints.length > 1) {
+                // Solo mostrar cierre si hay al menos 3 puntos
+                pts = [drawingPoints[drawingPoints.length-1], e.latlng];
+                if (drawingPoints.length >= 3) {
+                     pts = [drawingPoints[drawingPoints.length-1], e.latlng, drawingPoints[0]];
+                }
+            }
             guideLine = L.polyline(pts, { color: 'white', weight: 1, dashArray: '5, 10' }).addTo(map);
         }
     });
@@ -168,11 +189,14 @@
             drawingPoints.push(e.latlng);
             if (drawingPoints.length === 2) { createFeature('line', [...drawingPoints]); setMode(null); }
         } else if (currentMode === 'area') {
-            drawingPoints.push(e.latlng);
-            if (tempLayer) map.removeLayer(tempLayer);
-            tempLayer = L.polyline(drawingPoints, {color:'red', weight: 2}).addTo(map);
-            if (drawingPoints.length > 2 && map.distance(e.latlng, drawingPoints[0]) < 15) {
-                drawingPoints.pop(); createFeature('area', [...drawingPoints]); setMode(null);
+            // Lógica modificada: Min 3 vértices para área
+            if (drawingPoints.length >= 3 && map.distance(e.latlng, drawingPoints[0]) < 15) {
+                createFeature('area', [...drawingPoints]); 
+                setMode(null);
+            } else {
+                drawingPoints.push(e.latlng);
+                if (tempLayer) map.removeLayer(tempLayer);
+                tempLayer = L.polyline(drawingPoints, {color:'red', weight: 2}).addTo(map);
             }
         } else if (currentMode === 'add-v' && selectedId) {
             insertVertexNear(selectedId, e.latlng);
