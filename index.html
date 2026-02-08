@@ -1,278 +1,305 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="utf-8" />
-  <title>Subestación Fotovoltaica - Medición y Progreso</title>
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-  <style>
-    :root {
-      --primary-color: #00ff00;
-      --bg-dark: rgba(0, 0, 0, 0.9);
-    }
-    body { margin:0; padding:0; font-family: 'Segoe UI', Arial, sans-serif; background: #1a1a1a; }
+    <title>SUBESTACION FOTOVOLTAICA - GESTOR</title>
+    <meta charset="utf-8" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        :root { --primary-blue: #1976d2; --bg-dark: #1a1a1a; --utm-green: #00ff00; }
+        body { margin: 0; padding: 0; background: var(--bg-dark); font-family: 'Segoe UI', sans-serif; display: flex; height: 100vh; overflow: hidden; color: white; }
 
-    /* SIDEBAR IZQUIERDO */
-    #sidebar {
-      position: fixed; left: 0; top: 0; bottom: 0;
-      width: 300px; background: #f8f9fa;
-      border-right: 1px solid #ccc; padding: 15px;
-      overflow-y: auto; z-index: 2000;
-    }
+        /* SIDEBAR */
+        #sidebar { width: 340px; background: #f4f6f8; border-right: 1px solid #ddd; display: flex; flex-direction: column; z-index: 2500; color: #333; }
+        .sidebar-header { padding: 15px; background: white; border-bottom: 1px solid #ddd; text-align: center; }
+        .sidebar-scroll { flex-grow: 1; overflow-y: auto; padding: 15px; }
+        .section-title { font-weight: bold; font-size: 11px; color: #888; text-transform: uppercase; margin: 15px 0 8px; letter-spacing: 1px; }
 
-    #map-container {
-      position: absolute; left: 300px; top: 0; right: 0; bottom: 0;
-    }
-    #map { width: 100%; height: 100%; cursor: crosshair; }
+        /* CARDS ACORDEÓN */
+        .feature-card { background: white; border: 1px solid #e0e0e0; border-radius: 8px; margin-bottom: 8px; transition: 0.2s; cursor: pointer; overflow: hidden; }
+        .feature-card.selected { border-color: var(--primary-blue); border-left: 6px solid var(--primary-blue); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        .card-header { padding: 12px; display: flex; justify-content: space-between; align-items: center; }
+        .card-title { font-weight: bold; color: #444; font-size: 13px; }
+        .selected .card-title { color: var(--primary-blue); }
+        .card-content { display: none; padding: 12px; border-top: 1px solid #f0f0f0; background: #fafafa; }
+        .selected .card-content { display: block; }
+        .utm-row { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #eee; align-items: center; font-family: monospace; font-size: 11px; }
+        
+        /* X GIGANTE */
+        .remove-v { color: #d32f2f; cursor: pointer; font-size: 18px; font-weight: 900; margin-left: 15px; }
 
-    /* TOOLBAR DERECHO (Botones de texto) */
-    #toolbar {
-      position: fixed; right: 20px; top: 20%;
-      display: flex; flex-direction: column; gap: 10px;
-      z-index: 2500;
-    }
+        .edit-controls { display: flex; gap: 8px; margin-top: 10px; }
+        .btn-action { flex: 1; border: none; padding: 8px; border-radius: 4px; font-size: 10px; font-weight: bold; cursor: pointer; text-transform: uppercase; }
+        .btn-add { background: #333; color: white; }
+        .btn-save { background: var(--primary-blue); color: white; }
+        .btn-del-main { background: none; color: #d32f2f; border: none; font-size: 10px; cursor: pointer; font-weight: bold; }
 
-    .btn-tool {
-      background: var(--bg-dark); color: white;
-      border: 1px solid #444; padding: 10px 15px;
-      border-radius: 8px; cursor: pointer;
-      font-weight: bold; text-align: center;
-      transition: all 0.2s; min-width: 100px;
-    }
-    .btn-tool:hover { background: #333; border-color: var(--primary-color); }
-    .btn-tool.active { background: #1976d2; border-color: #fff; }
+        /* MAPA Y UI */
+        #map-container { flex-grow: 1; position: relative; }
+        #map { width: 100%; height: 100%; background: #111; cursor: crosshair; }
+        
+        .brand-logo { position: absolute; bottom: 20px; left: 20px; z-index: 2000; width: 150px; filter: drop-shadow(0 2px 5px rgba(0,0,0,0.7)); pointer-events: none; }
+        .corner-logo { position: absolute; top: 15px; right: 15px; z-index: 2000; width: 80px; pointer-events: none; }
 
-    /* PANEL DE ACCIÓN (Aceptar/Cancelar) */
-    #action-panel {
-      display: none; flex-direction: row; gap: 10px;
-      margin-top: 20px; border-top: 2px solid #444; pt: 10px;
-    }
-    .btn-confirm { background: #2e7d32; }
-    .btn-cancel { background: #c62828; }
+        .ui-bottom { position: absolute; bottom: 25px; left: 50%; transform: translateX(-50%); width: 300px; z-index: 2000; display: flex; flex-direction: column; align-items: center; gap: 8px; }
+        .utm-box { background: rgba(0,0,0,0.9); color: var(--utm-green); padding: 5px 12px; border-radius: 4px; border: 1px solid #444; font-family: monospace; font-size: 11px; }
+        .slider-wrapper { background: rgba(0,0,0,0.9); padding: 10px; border-radius: 8px; width: 100%; border: 1px solid #333; text-align: center; }
+        .current-date-label { color: var(--utm-green); font-size: 11px; font-weight: bold; border: 1px solid var(--utm-green); padding: 2px 8px; border-radius: 4px; margin-bottom: 6px; display: inline-block; }
+        input[type=range] { width: 100%; accent-color: var(--utm-green); cursor: pointer; }
 
-    /* SLIDER INFERIOR (Progreso Ortofotos) */
-    .ui-container {
-      position: absolute; bottom: 30px; left: 50%;
-      transform: translateX(-50%); width: 400px;
-      z-index: 2500; display: flex; flex-direction: column; gap: 8px;
-    }
-    .utm-box {
-      background: var(--bg-dark); color: var(--primary-color);
-      padding: 5px 12px; border-radius: 4px; text-align: center;
-      font-family: monospace; font-size: 12px;
-    }
-    .slider-wrapper {
-      background: var(--bg-dark); padding: 12px;
-      border-radius: 8px; border: 1px solid #333; text-align: center;
-    }
-    .current-date-label {
-      color: var(--primary-color); font-size: 12px; font-weight: bold;
-      border: 1px solid var(--primary-color); padding: 2px 8px;
-      border-radius: 4px; margin-bottom: 8px; display: inline-block;
-    }
-    input[type=range] { width: 100%; accent-color: var(--primary-color); cursor: pointer; }
+        /* TOOLBAR DERECHA */
+        #toolbar { position: absolute; right: 15px; top: 50%; transform: translateY(-50%); z-index: 2000; display: flex; flex-direction: column; gap: 10px; }
+        .tool-btn { width: 44px; height: 44px; background: white; border-radius: 10px; border: 1px solid #ccc; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 6px rgba(0,0,0,0.3); }
+        .tool-btn.active { background: var(--primary-blue); border-color: white; }
+        .tool-btn svg { width: 22px; height: 22px; stroke: #333; fill: none; stroke-width: 2; }
+        .tool-btn.active svg { stroke: white; }
 
-    /* Estilos de lista en sidebar */
-    .section-title { font-weight: bold; margin: 15px 0 5px; border-bottom: 1px solid #ccc; font-size: 14px; }
-    .item-text { font-size: 11px; padding: 5px; border-bottom: 1px solid #eee; cursor: pointer; white-space: pre-line; }
-    .active-item { background: #e3f2fd; border-left: 4px solid #1976d2; }
-    .delete-btn { font-size: 10px; color: red; cursor: pointer; border: none; background: none; }
-  </style>
+        .point-name-label { font-weight: bold; color: #00ffff; font-size: 12px; text-shadow: 2px 2px 4px #000; white-space: nowrap; pointer-events: none; }
+    </style>
 </head>
 <body>
 
 <div id="sidebar">
-  <h3>Panel de Control</h3>
-  <div class="section-title">Líneas (Medir)</div>
-  <div id="line-list"></div>
-  <div class="section-title">Áreas</div>
-  <div id="area-list"></div>
-  <div class="section-title">Ubicaciones</div>
-  <div id="point-list"></div>
+    <div class="sidebar-header"><h3>GESTOR PROYECTO</h3></div>
+    <div class="sidebar-scroll">
+        <div class="section-title">Líneas</div>
+        <div id="list-line"></div>
+        <div class="section-title">Áreas</div>
+        <div id="list-area"></div>
+        <div class="section-title">Puntos</div>
+        <div id="list-point"></div>
+    </div>
 </div>
 
 <div id="map-container">
-  <div id="map"></div>
-</div>
+    <div id="map"></div>
+    
+    <img src="logo.jpg" class="brand-logo" alt="Logo">
+    <img src="pngegg.png" class="corner-logo" alt="Logo Esquina">
 
-<div id="toolbar">
-  <button class="btn-tool" id="tool-line">MEDIR</button>
-  <button class="btn-tool" id="tool-area">ÁREA</button>
-  <button class="btn-tool" id="tool-point">PUNTO</button>
-  <button class="btn-tool" id="tool-edit">EDICIÓN</button>
+    <div id="toolbar">
+        <button class="tool-btn" id="btn-line" title="Dibujar Línea"><svg viewBox="0 0 24 24"><path d="M5 19L19 5"/></svg></button>
+        <button class="tool-btn" id="btn-area" title="Dibujar Área"><svg viewBox="0 0 24 24"><path d="M4 4h10l6 6-6 6H4z"/></svg></button>
+        <button class="tool-btn" id="btn-point" title="Marcar Punto"><svg viewBox="0 0 24 24"><circle cx="12" cy="10" r="3"/><path d="M12 21s-9-9-9-13a9 9 0 0118 0c0 4-9 13-9 13z"/></svg></button>
+    </div>
 
-  <div id="action-panel">
-    <button class="btn-tool btn-confirm" id="btn-accept">ACEPTAR</button>
-    <button class="btn-tool btn-cancel" id="btn-cancel">CANCELAR</button>
-  </div>
-</div>
-
-<div class="ui-container">
-  <div class="utm-box" id="utm-coord">E: --- | N: ---</div>
-  <div class="slider-wrapper">
-    <div id="fecha-label" class="current-date-label">CARGANDO...</div>
-    <input type="range" id="smooth-slider" min="0" value="0" step="1">
-  </div>
+    <div class="ui-bottom">
+        <div class="utm-box" id="utm-coord">E: --- | N: ---</div>
+        <div class="slider-wrapper">
+            <div id="fecha-label" class="current-date-label">CARGANDO...</div>
+            <input type="range" id="smooth-slider" min="0" value="0" step="1">        
+        </div>
+    </div>
 </div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.9.0/proj4.js"></script>
 
 <script>
-  // 1. CONFIGURACIÓN INICIAL Y MAPA
-  var utm19S = "+proj=utm +zone=19 +south +datum=WGS84 +units=m +no_defs";
-  var wgs84 = "+proj=longlat +datum=WGS84 +no_defs";
+    // 1. CONFIGURACIÓN UTM Y MAPA
+    var utm19S = "+proj=utm +zone=19 +south +datum=WGS84 +units=m +no_defs";
+    var wgs84 = "+proj=longlat +datum=WGS84 +no_defs";
+    const toUTM = (ll) => {
+        const p = proj4(wgs84, utm19S, [ll.lng, ll.lat]);
+        return { x: p[0], y: p[1] };
+    };
 
-  var map = L.map('map', { zoomControl: false }).setView([-20.351387, -69.721985], 19);
+    var map = L.map('map', { zoomControl: false, minZoom: 17, maxZoom: 23 }).setView([-20.351387, -69.721985], 19);
+    L.tileLayer('https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', { maxZoom: 23 }).addTo(map);
 
-  L.tileLayer('https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', { maxZoom: 23 }).addTo(map);
+    // 2. LÓGICA DE ORTOFOTOS (SLIDER)
+    var fechas = ["03/12/2025", "09/01/2026", "21/01/2026", "23/01/2026", "28/01/2026", "06/02/2026"];
+    var capas = [
+        L.tileLayer('03122025/Z{z}/{y}/{x}.png', { maxZoom: 23, opacity: 1 }).addTo(map),
+        L.tileLayer('09012026/Z{z}/{y}/{x}.png', { maxZoom: 23, opacity: 0 }).addTo(map),
+        L.tileLayer('21012026/Z{z}/{y}/{x}.png', { maxZoom: 23, opacity: 0 }).addTo(map),
+        L.tileLayer('23012026/Z{z}/{y}/{x}.png', { maxZoom: 23, opacity: 0 }).addTo(map),
+        L.tileLayer('28012026/Z{z}/{y}/{x}.png', { maxZoom: 23, opacity: 0 }).addTo(map),
+        L.tileLayer('06022026/Z{z}/{y}/{x}.png', { maxZoom: 23, opacity: 0 }).addTo(map)
+    ];
 
-  // 2. CAPAS DE PROGRESO (ORTOFOTOS)
-  var fechas = ["03/12/2025", "09/01/2026", "21/01/2026", "23/01/2026", "28/01/2026"];
-  var capas = [
-    L.tileLayer('03122025/Z{z}/{y}/{x}.png', { maxZoom: 23, opacity: 1 }).addTo(map),
-    L.tileLayer('09012026/Z{z}/{y}/{x}.png', { maxZoom: 23, opacity: 0 }).addTo(map),
-    L.tileLayer('21012026/Z{z}/{y}/{x}.png', { maxZoom: 23, opacity: 0 }).addTo(map),
-    L.tileLayer('23012026/Z{z}/{y}/{x}.png', { maxZoom: 23, opacity: 0 }).addTo(map),
-    L.tileLayer('28012026/Z{z}/{y}/{x}.png', { maxZoom: 23, opacity: 0 }).addTo(map)
-  ];
+    var slider = document.getElementById('smooth-slider');
+    slider.max = (capas.length - 1) * 100;
 
-  // Lógica del Slider
-  var slider = document.getElementById('smooth-slider');
-  var label = document.getElementById('fecha-label');
-  slider.max = (capas.length - 1) * 100;
+    function updateView() {
+        var val = parseFloat(slider.value);
+        var idx = Math.floor(val / 100);
+        var sub = (val % 100) / 100;
+        if (idx >= capas.length - 1) { idx = capas.length - 2; sub = 1; }
+        capas.forEach((c, i) => c.setOpacity(i === idx ? 1 - sub : (i === idx + 1 ? sub : 0)));
+        document.getElementById('fecha-label').innerText = (sub > 0.5) ? fechas[idx + 1] : fechas[idx];
+    }
+    slider.oninput = updateView;
+    updateView();
 
-  function updateSlider() {
-    var val = parseFloat(slider.value);
-    var index = Math.floor(val / 100);
-    var subVal = (val % 100) / 100;
-    if (index >= capas.length - 1) { index = capas.length - 2; subVal = 1; }
+    // 3. LÓGICA DE HERRAMIENTAS DE MEDICIÓN
+    let currentMode = null, drawingPoints = [], tempLayer = null, guideLine = null;
+    let features = {}, counters = { line: 0, area: 0, point: 0 };
+    let selectedId = null, editMarkers = [], pointLabels = {};
 
-    capas.forEach((c, i) => {
-      if (i === index) c.setOpacity(1 - subVal);
-      else if (i === index + 1) c.setOpacity(subVal);
-      else c.setOpacity(0);
+    function setMode(mode) {
+        currentMode = mode;
+        if(mode !== 'add-v') { drawingPoints = []; if(tempLayer) map.removeLayer(tempLayer); }
+        if(guideLine) map.removeLayer(guideLine);
+        document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
+        if(mode && mode !== 'add-v') document.getElementById(`btn-${mode}`).classList.add('active');
+        map.getContainer().style.cursor = mode ? 'crosshair' : '';
+    }
+
+    document.getElementById('btn-line').onclick = () => setMode('line');
+    document.getElementById('btn-area').onclick = () => setMode('area');
+    document.getElementById('btn-point').onclick = () => setMode('point');
+
+    map.on('mousemove', (e) => {
+        const utm = toUTM(e.latlng);
+        document.getElementById('utm-coord').innerText = `E: ${utm.x.toFixed(2)} | N: ${utm.y.toFixed(2)}`;
+        
+        if (currentMode && drawingPoints.length > 0) {
+            if (guideLine) map.removeLayer(guideLine);
+            let pts = [drawingPoints[drawingPoints.length - 1], e.latlng];
+            if (currentMode === 'area' && drawingPoints.length > 1) pts = [drawingPoints[drawingPoints.length-1], e.latlng, drawingPoints[0]];
+            guideLine = L.polyline(pts, { color: 'white', weight: 1, dashArray: '5, 10' }).addTo(map);
+        }
     });
-    label.innerText = (subVal > 0.5) ? fechas[index + 1] : fechas[index];
-  }
-  slider.addEventListener('input', updateSlider);
 
-  // 3. HERRAMIENTAS DE MEDICIÓN
-  var currentMode = null;
-  var lines = [], areas = [], points = [];
-  var tempShape = null, pointsArray = [];
-  var highlightedFeature = null;
+    map.on('click', (e) => {
+        if (!currentMode) return;
+        if (currentMode === 'point') { createFeature('point', [e.latlng]); setMode(null); }
+        else if (currentMode === 'line') {
+            drawingPoints.push(e.latlng);
+            if (drawingPoints.length === 2) { createFeature('line', [...drawingPoints]); setMode(null); }
+        } else if (currentMode === 'area') {
+            drawingPoints.push(e.latlng);
+            if (tempLayer) map.removeLayer(tempLayer);
+            tempLayer = L.polyline(drawingPoints, {color:'red', weight: 2}).addTo(map);
+            if (drawingPoints.length > 2 && map.distance(e.latlng, drawingPoints[0]) < 15) {
+                drawingPoints.pop(); createFeature('area', [...drawingPoints]); setMode(null);
+            }
+        } else if (currentMode === 'add-v' && selectedId) {
+            insertVertexNear(selectedId, e.latlng);
+        }
+    });
 
-  function setMode(mode) {
-    currentMode = mode;
-    // Reset de botones UI
-    document.querySelectorAll('.btn-tool').forEach(b => b.classList.remove('active'));
-    document.getElementById('action-panel').style.display = mode ? 'flex' : 'none';
-    
-    if(mode) document.getElementById('tool-' + mode).classList.add('active');
-    
-    // Reset de estados de dibujo
-    pointsArray = [];
-    if(tempShape) { map.removeLayer(tempShape); tempShape = null; }
-    if(mode !== 'edit') removeEditMarkers();
-  }
+    function createFeature(type, coords) {
+        const id = Date.now(); counters[type]++;
+        let layer, name = `${type==='line'?'LÍNEA':type==='area'?'ÁREA':'PUNTO'} ${counters[type]}`;
 
-  // Eventos de botones
-  document.getElementById('tool-line').onclick = () => setMode('line');
-  document.getElementById('tool-area').onclick = () => setMode('area');
-  document.getElementById('tool-point').onclick = () => setMode('point');
-  document.getElementById('tool-edit').onclick = () => {
-    setMode('edit');
-    buildEditMarkers();
-  };
+        if(type === 'line') layer = L.polyline(coords, {color:'red', weight:3}).addTo(map);
+        else if(type === 'area') layer = L.polygon(coords, {color:'red', weight:2, fillOpacity:0.3}).addTo(map);
+        else {
+            layer = L.circleMarker(coords[0], { radius: 6, color: 'red', fillColor: 'white', fillOpacity: 1 }).addTo(map);
+            const lbl = L.marker(coords[0], { icon: L.divIcon({ className:'point-name-label', html: name, iconAnchor:[40,25] }), interactive:false }).addTo(map);
+            pointLabels[id] = lbl;
+        }
 
-  document.getElementById('btn-cancel').onclick = () => {
-    setMode(null);
-  };
-
-  document.getElementById('btn-accept').onclick = () => {
-    if (currentMode === 'area' && pointsArray.length >= 3) {
-      finalizeArea();
+        features[id] = { id, type, name, layer };
+        addSidebarCard(id);
+        layer.on('click', (ev) => { L.DomEvent.stopPropagation(ev); selectFeature(id); });
+        selectFeature(id);
     }
-    setMode(null);
-  };
 
-  // Clic en el Mapa
-  map.on('click', function(e) {
-    if (!currentMode) return;
-
-    if (currentMode === 'line') {
-      pointsArray.push(e.latlng);
-      if (pointsArray.length === 2) {
-        finalizeLine(pointsArray);
-        setMode(null); // Auto-deseleccionar
-      }
-    } 
-    else if (currentMode === 'area') {
-      pointsArray.push(e.latlng);
-      if (tempShape) map.removeLayer(tempShape);
-      tempShape = L.polyline(pointsArray, {color: 'red'}).addTo(map);
+    function addSidebarCard(id) {
+        const f = features[id];
+        const card = document.createElement('div');
+        card.className = 'feature-card'; card.id = `card-${id}`;
+        card.onclick = () => selectFeature(id);
+        card.innerHTML = `
+            <div class="card-header">
+                <span class="card-title" id="title-${id}">${f.name}</span>
+                <button class="btn-del-main" onclick="deleteFeat(${id}, event)">ELIMINAR</button>
+            </div>
+            <div class="card-content">
+                <div id="coords-${id}"></div>
+                ${f.type !== 'point' ? `<div class="edit-controls">
+                    <button class="btn-action btn-add" onclick="event.stopPropagation(); setMode('add-v');">+ PUNTO</button>
+                    <button class="btn-action btn-save" onclick="event.stopPropagation(); setMode(null); deselectAll();">ACEPTAR</button>
+                </div>` : ''}
+            </div>`;
+        document.getElementById(`list-${f.type}`).appendChild(card);
+        updateCardData(id);
     }
-    else if (currentMode === 'point') {
-      finalizePoint(e.latlng);
-      setMode(null); // Auto-deseleccionar
+
+    function calculateArea(latlngs) {
+        let area = 0; const utms = latlngs.map(ll => toUTM(ll));
+        for (let i = 0; i < utms.length; i++) {
+            let j = (i + 1) % utms.length;
+            area += utms[i].x * utms[j].y; area -= utms[j].x * utms[i].y;
+        }
+        return Math.abs(area) / 2;
     }
-  });
 
-  // Funciones de finalización
-  function finalizeLine(pts) {
-    var line = L.polyline(pts, {color: '#1976d2', weight: 4}).addTo(map);
-    var dist = map.distance(pts[0], pts[1]);
-    var utm1 = latLngToUTM(pts[0]);
-    var utm2 = latLngToUTM(pts[1]);
-    
-    var div = document.createElement('div');
-    div.className = 'item-text';
-    div.innerHTML = `<b>Línea: ${dist.toFixed(2)}m</b>\nE1:${utm1.e.toFixed(2)} N1:${utm1.n.toFixed(2)}\nE2:${utm2.e.toFixed(2)} N2:${utm2.n.toFixed(2)}`;
-    document.getElementById('line-list').appendChild(div);
-    lines.push({layer: line, data: div});
-  }
+    function updateCardData(id) {
+        const f = features[id];
+        let latlngs = f.type === 'point' ? [f.layer.getLatLng()] : (f.type === 'area' ? f.layer.getLatLngs()[0] : f.layer.getLatLngs());
+        if(f.type === 'line') {
+            let d = 0; for(let i=0; i<latlngs.length-1; i++) d += map.distance(latlngs[i], latlngs[i+1]);
+            document.getElementById(`title-${id}`).innerText = `${f.name}: ${d.toFixed(2)} m`;
+        } else if(f.type === 'area') {
+            document.getElementById(`title-${id}`).innerText = `${f.name}: ${calculateArea(latlngs).toFixed(2)} m²`;
+        }
+        document.getElementById(`coords-${id}`).innerHTML = latlngs.map((ll, i) => {
+            const u = toUTM(ll);
+            return `<div class="utm-row"><span>V${i+1}: E ${u.x.toFixed(2)} | N ${u.y.toFixed(2)}</span>
+            ${latlngs.length>(f.type==='area'?3:2)?`<span class="remove-v" onclick="removeVertex(${id},${i});event.stopPropagation();">X</span>`:''}</div>`;
+        }).join('');
+    }
 
-  function finalizeArea() {
-    var poly = L.polygon(pointsArray, {color: '#2e7d32', fillOpacity: 0.3}).addTo(map);
-    var div = document.createElement('div');
-    div.className = 'item-text';
-    div.innerHTML = `<b>Área creada</b>\n(Ver coordenadas en edición)`;
-    document.getElementById('area-list').appendChild(div);
-    areas.push({layer: poly, data: div});
-  }
+    function selectFeature(id) {
+        deselectAll(); selectedId = id;
+        const f = features[id];
+        document.getElementById(`card-${id}`).classList.add('selected');
+        if(f.type !== 'point') { f.layer.setStyle({color:'cyan', weight:4}); showEditNodes(id); }
+    }
 
-  function finalizePoint(latlng) {
-    var utm = latLngToUTM(latlng);
-    L.marker(latlng).addTo(map);
-    var div = document.createElement('div');
-    div.className = 'item-text';
-    div.innerHTML = `<b>Punto UTM:</b>\nE: ${utm.e.toFixed(2)} N: ${utm.n.toFixed(2)}`;
-    document.getElementById('point-list').appendChild(div);
-  }
+    function deselectAll() {
+        selectedId = null; editMarkers.forEach(m => map.removeLayer(m));
+        Object.values(features).forEach(f => {
+            if(f.type !== 'point') f.layer.setStyle({color:'red', weight:2});
+            const el = document.getElementById(`card-${f.id}`); if(el) el.classList.remove('selected');
+        });
+    }
 
-  // Utilidades UTM
-  function latLngToUTM(ll) {
-    var p = proj4(wgs84, utm19S, [ll.lng, ll.lat]);
-    return { e: p[0], n: p[1] };
-  }
+    function showEditNodes(id) {
+        editMarkers.forEach(m => map.removeLayer(m)); editMarkers = [];
+        const f = features[id];
+        let latlngs = f.type === 'area' ? f.layer.getLatLngs()[0] : f.layer.getLatLngs();
+        latlngs.forEach((ll, i) => {
+            const m = L.circleMarker(ll, { radius:6, color:'cyan', fillColor:'white', fillOpacity:1, interactive:true }).addTo(map);
+            m.on('mousedown', () => {
+                map.dragging.disable();
+                map.on('mousemove', (ev) => {
+                    m.setLatLng(ev.latlng); latlngs[i] = ev.latlng;
+                    f.layer.setLatLngs(f.type === 'area' ? [latlngs] : latlngs);
+                    updateCardData(id);
+                });
+                map.on('mouseup', () => { map.dragging.enable(); map.off('mousemove'); });
+            });
+            editMarkers.push(m);
+        });
+    }
 
-  map.on('mousemove', function(e) {
-    var p = latLngToUTM(e.latlng);
-    document.getElementById('utm-coord').innerHTML = `E: ${p.e.toFixed(2)} | N: ${p.n.toFixed(2)}`;
-  });
+    function insertVertexNear(id, ll) {
+        const f = features[id]; let latlngs = f.type === 'area' ? f.layer.getLatLngs()[0] : f.layer.getLatLngs();
+        let minDist = Infinity, idx = 1;
+        for (let i = 0; i < latlngs.length; i++) {
+            let j = (i + 1) % latlngs.length; if(f.type === 'line' && i === latlngs.length - 1) break;
+            let d = L.LineUtil.pointToSegmentDistance(map.latLngToLayerPoint(ll), map.latLngToLayerPoint(latlngs[i]), map.latLngToLayerPoint(latlngs[j]));
+            if (d < minDist) { minDist = d; idx = j; }
+        }
+        latlngs.splice(idx, 0, ll); f.layer.setLatLngs(f.type === 'area' ? [latlngs] : latlngs);
+        updateCardData(id); showEditNodes(id);
+    }
 
-  // Gestión de edición (Simplificada)
-  var editMarkers = [];
-  function buildEditMarkers() {
-    removeEditMarkers();
-    // Aquí se añadiría la lógica de puntos de arrastre para la última figura seleccionada
-  }
-  function removeEditMarkers() {
-    editMarkers.forEach(m => map.removeLayer(m));
-    editMarkers = [];
-  }
+    function removeVertex(id, idx) {
+        const f = features[id]; let latlngs = f.type === 'area' ? f.layer.getLatLngs()[0] : f.layer.getLatLngs();
+        latlngs.splice(idx, 1); f.layer.setLatLngs(f.type === 'area' ? [latlngs] : latlngs);
+        updateCardData(id); showEditNodes(id);
+    }
 
-  updateSlider();
+    function deleteFeat(id, ev) {
+        ev.stopPropagation(); map.removeLayer(features[id].layer);
+        if(pointLabels[id]) map.removeLayer(pointLabels[id]);
+        document.getElementById(`card-${id}`).remove(); delete features[id]; deselectAll();
+    }
 </script>
 </body>
 </html>
