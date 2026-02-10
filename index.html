@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <title>GESTIÓN SUBESTACIÓN - CONTROL DE AVANCE</title>
+    <title>GESTIÓN SUBESTACIÓN - VISTA ÚNICA</title>
     <meta charset="utf-8" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
@@ -16,7 +16,7 @@
 
         /* MEDICIONES CARDS */
         .feature-card { background: white; border: 1px solid #e0e0e0; border-radius: 8px; margin-bottom: 8px; cursor: pointer; overflow: hidden; }
-        .feature-card.selected { border-left: 6px solid var(--primary-blue); border-color: var(--primary-blue); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        .feature-card.selected { border-left: 6px solid var(--primary-blue); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
         .card-header { padding: 10px; display: flex; justify-content: space-between; align-items: center; }
         .card-title { font-weight: bold; font-size: 12px; color: #444; }
         .card-content { display: none; padding: 10px; border-top: 1px solid #eee; background: #fafafa; }
@@ -28,34 +28,38 @@
         #map-container { flex-grow: 1; position: relative; }
         #map { width: 100%; height: 100%; background: #111; cursor: crosshair; }
         
-        .ui-bottom { position: absolute; bottom: 25px; left: 50%; transform: translateX(-50%); width: 450px; z-index: 2000; display: flex; flex-direction: column; align-items: center; gap: 8px; }
-        .utm-box { background: rgba(0,0,0,0.9); color: var(--utm-green); padding: 5px 12px; border-radius: 4px; font-family: monospace; font-size: 11px; border: 1px solid #444; }
+        .ui-bottom { position: absolute; bottom: 25px; left: 50%; transform: translateX(-50%); width: auto; min-width: 400px; z-index: 2000; display: flex; flex-direction: column; align-items: center; gap: 8px; }
+        .utm-box { background: rgba(0,0,0,0.85); color: var(--utm-green); padding: 5px 12px; border-radius: 4px; font-family: monospace; font-size: 11px; border: 1px solid #444; }
         
-        .comparator-wrapper { 
-            background: rgba(0,0,0,0.95); padding: 12px; border-radius: 12px; width: 100%; 
-            border: 1px solid #444; display: flex; justify-content: space-between; align-items: center; gap: 10px;
+        /* BARRA DE CONTROL INFERIOR */
+        .controls-wrapper { 
+            background: rgba(0,0,0,0.9); padding: 12px 20px; border-radius: 12px; width: 100%; 
+            border: 1px solid #444; display: flex; align-items: center; gap: 25px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.5);
         }
-        .selector-group { display: flex; flex-direction: column; flex: 1; }
-        .selector-group label { font-size: 9px; color: #aaa; text-transform: uppercase; margin-bottom: 3px; font-weight: bold; }
-        select { background: #222; color: white; border: 1px solid #444; padding: 5px; border-radius: 4px; font-size: 11px; cursor: pointer; }
+        .control-group { display: flex; align-items: center; gap: 10px; }
+        .control-group label { font-size: 11px; color: #aaa; text-transform: uppercase; font-weight: bold; }
+        
+        select { background: #222; color: white; border: 1px solid #555; padding: 6px 12px; border-radius: 6px; font-size: 13px; cursor: pointer; outline: none; }
+        
+        /* ESTILO DEL CHECKBOX (TICKET) */
+        .checkbox-container { display: flex; align-items: center; gap: 8px; cursor: pointer; user-select: none; font-size: 13px; font-weight: bold; color: white; }
+        .checkbox-container input { cursor: pointer; width: 18px; height: 18px; accent-color: #ff9800; }
 
-        /* TOOLBAR */
+        /* TOOLBAR LATERAL */
         #toolbar { position: absolute; right: 15px; top: 50%; transform: translateY(-50%); z-index: 2000; display: flex; flex-direction: column; gap: 10px; }
-        .tool-btn { width: 44px; height: 44px; background: white; border-radius: 10px; border: 1px solid #ccc; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 6px rgba(0,0,0,0.2); }
+        .tool-btn { width: 44px; height: 44px; background: white; border-radius: 10px; border: 1px solid #ccc; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 6px rgba(0,0,0,0.2); transition: 0.2s; }
         .tool-btn.active { background: var(--primary-blue); border-color: white; }
         .tool-btn svg { width: 22px; height: 22px; stroke: #333; fill: none; stroke-width: 2; }
         .tool-btn.active svg { stroke: white; }
-        #btn-project.active { background: #ff9800; border-color: white; }
-        #btn-project.active svg { stroke: white; }
 
-        .leaflet-sbs-divider { width: 4px; background-color: var(--utm-green); box-shadow: 0 0 10px rgba(0,255,0,0.5); }
-        .point-name-label { font-weight: bold; color: #00ffff; font-size: 10px; text-shadow: 1px 1px 2px #000; white-space: nowrap; pointer-events: none; }
+        .point-name-label { font-weight: bold; color: #00ffff; font-size: 10px; text-shadow: 1px 1px 2px #000; pointer-events: none; }
     </style>
 </head>
 <body>
 
 <div id="sidebar">
-    <div class="sidebar-header"><h3>GESTIÓN DE SUBESTACIÓN</h3></div>
+    <div class="sidebar-header"><h3>GESTIÓN DE OBRA</h3></div>
     <div class="sidebar-scroll">
         <div class="section-title">Líneas</div><div id="list-line"></div>
         <div class="section-title">Áreas</div><div id="list-area"></div>
@@ -68,24 +72,22 @@
     
     <div class="ui-bottom">
         <div class="utm-box" id="utm-coord">E: --- | N: ---</div>
-        <div class="comparator-wrapper">
-            <div class="selector-group">
-                <label>Lado Izquierdo</label>
-                <select id="select-left"></select>
+        <div class="controls-wrapper">
+            <div class="control-group">
+                <label>Ortofoto:</label>
+                <select id="select-date"></select>
             </div>
-            <div style="color: var(--utm-green); font-weight: bold;">VS</div>
-            <div class="selector-group">
-                <label>Lado Derecho</label>
-                <select id="select-right"></select>
-            </div>
+            
+            <div style="width: 1px; height: 25px; background: #444;"></div>
+
+            <label class="checkbox-container">
+                <input type="checkbox" id="check-project" checked>
+                PROYECTO (Fundaciones)
+            </label>
         </div>
     </div>
 
     <div id="toolbar">
-        <button class="tool-btn active" id="btn-project" title="Plano Fundaciones">
-            <svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
-        </button>
-        <div style="height: 1px; background: #ddd; margin: 4px 0;"></div>
         <button class="tool-btn" id="btn-line" title="Línea"><svg viewBox="0 0 24 24"><path d="M5 19L19 5"/></svg></button>
         <button class="tool-btn" id="btn-area" title="Área"><svg viewBox="0 0 24 24"><path d="M4 4h10l6 6-6 6H4z"/></svg></button>
         <button class="tool-btn" id="btn-point" title="Punto"><svg viewBox="0 0 24 24"><circle cx="12" cy="10" r="3"/><path d="M12 21s-9-9-9-13a9 9 0 0118 0c0 4-9 13-9 13z"/></svg></button>
@@ -94,10 +96,9 @@
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.9.0/proj4.js"></script>
-<script src="https://cdn.jsdelivr.net/gh/digidem/leaflet-side-by-side@gh-pages/leaflet-side-by-side.min.js"></script>
 
 <script>
-    // 1. CONFIGURACIÓN UTM Y MAPA
+    // 1. CONFIGURACIÓN UTM
     var utm19S = "+proj=utm +zone=19 +south +datum=WGS84 +units=m +no_defs";
     var wgs84 = "+proj=longlat +datum=WGS84 +no_defs";
     const toUTM = (ll) => {
@@ -105,68 +106,54 @@
         return { x: p[0], y: p[1] };
     };
 
+    // 2. MAPA BASE
     var map = L.map('map', { zoomControl: false, minZoom: 17, maxZoom: 23 }).setView([-20.351387, -69.721985], 19);
     L.tileLayer('https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', { maxZoom: 23 }).addTo(map);
 
-    // 2. CAPA PROYECTO (FUNDACIONES) CON COORDENADAS AJUSTADAS (+26cm N, +7cm E)
+    // 3. CAPA PROYECTO (PNG) - Coordenadas ajustadas (+26cm N, +7cm E)
     map.createPane('planoPane');
     map.getPane('planoPane').style.zIndex = 600;
-    
     var imageBounds = [
         [-20.3516049645341, -69.7225702970685], 
         [-20.3507350930697, -69.7212299365804]
     ];
-    var planoProyecto = L.imageOverlay('fundaciones.png', imageBounds, { pane: 'planoPane', opacity: 0.85 }).addTo(map);
+    var planoProyecto = L.imageOverlay('fundaciones.png', imageBounds, { pane: 'planoPane', opacity: 0.8 }).addTo(map);
 
-    document.getElementById('btn-project').onclick = function() {
-        this.classList.toggle('active');
-        if (map.hasLayer(planoProyecto)) map.removeLayer(planoProyecto);
-        else planoProyecto.addTo(map);
+    // Lógica del Ticket (Checkbox)
+    document.getElementById('check-project').onchange = function() {
+        if (this.checked) planoProyecto.addTo(map);
+        else map.removeLayer(planoProyecto);
     };
 
-    // 3. COMPARADOR SIDE-BY-SIDE (7 FECHAS)
+    // 4. GESTIÓN DE ORTOFOTOS (FECHAS)
     var fechas = ["03/12/2025", "09/01/2026", "21/01/2026", "23/01/2026", "28/01/2026", "06/02/2026", "07/02/2026"];
     var capasInfo = fechas.map(f => ({
         fecha: f,
         layer: L.tileLayer(f.replace(/\//g, '') + '/Z{z}/{y}/{x}.png', { maxZoom: 23 })
     }));
 
-    const selLeft = document.getElementById('select-left');
-    const selRight = document.getElementById('select-right');
-    fechas.forEach((f, i) => {
-        selLeft.add(new Option(f, i));
-        selRight.add(new Option(f, i));
-    });
+    const selectDate = document.getElementById('select-date');
+    fechas.forEach((f, i) => selectDate.add(new Option(f, i)));
 
-    selLeft.value = 0; 
-    selRight.value = fechas.length - 1; // Última fecha por defecto
+    // Cargar la última por defecto
+    selectDate.value = fechas.length - 1;
+    let currentOrtho = capasInfo[selectDate.value].layer.addTo(map);
 
-    let leftLayer = capasInfo[selLeft.value].layer.addTo(map);
-    let rightLayer = capasInfo[selRight.value].layer.addTo(map);
-    let sbsControl = L.control.sideBySide(leftLayer, rightLayer).addTo(map);
+    selectDate.onchange = function() {
+        map.removeLayer(currentOrtho);
+        currentOrtho = capasInfo[this.value].layer.addTo(map);
+        currentOrtho.bringToBack(); // Para que el proyecto y dibujos queden arriba
+    };
 
-    function updateComparison() {
-        map.removeLayer(leftLayer);
-        map.removeLayer(rightLayer);
-        leftLayer = capasInfo[selLeft.value].layer.addTo(map);
-        rightLayer = capasInfo[selRight.value].layer.addTo(map);
-        sbsControl.setLeftLayers(leftLayer);
-        sbsControl.setRightLayers(rightLayer);
-    }
-    selLeft.onchange = updateComparison;
-    selRight.onchange = updateComparison;
-
-    // 4. LÓGICA DE MEDICIÓN (PERSISTENTE)
+    // 5. MEDICIONES (Líneas, Áreas, Puntos)
     let currentMode = null, drawingPoints = [], tempLayer = null, guideLine = null;
-    let features = {}, counters = { line: 0, area: 0, point: 0 };
-    let pointLabels = {};
+    let features = {}, counters = { line: 0, area: 0, point: 0 }, pointLabels = {};
 
     function setMode(mode) {
-        currentMode = mode;
-        drawingPoints = [];
+        currentMode = mode; drawingPoints = [];
         if(tempLayer) map.removeLayer(tempLayer);
         if(guideLine) map.removeLayer(guideLine);
-        document.querySelectorAll('.tool-btn').forEach(b => { if(b.id !== 'btn-project') b.classList.remove('active'); });
+        document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
         if(mode) document.getElementById(`btn-${mode}`).classList.add('active');
     }
 
@@ -185,10 +172,8 @@
 
     map.on('click', (e) => {
         if (!currentMode) return;
-        if (currentMode === 'point') { 
-            createFeature('point', [e.latlng]); 
-            setMode(null); 
-        } else if (currentMode === 'line') {
+        if (currentMode === 'point') { createFeature('point', [e.latlng]); setMode(null); }
+        else if (currentMode === 'line') {
             drawingPoints.push(e.latlng);
             if (drawingPoints.length === 2) { createFeature('line', [...drawingPoints]); setMode(null); }
         } else if (currentMode === 'area') {
@@ -249,6 +234,7 @@
             }
             document.getElementById(`title-${id}`).innerText = `${f.name}: ${(Math.abs(area)/2).toFixed(2)} m²`;
         }
+
         document.getElementById(`coords-${id}`).innerHTML = latlngs.map((ll, i) => {
             const u = toUTM(ll);
             return `<div class="utm-row"><span>V${i+1}: E ${u.x.toFixed(2)} | N ${u.y.toFixed(2)}</span></div>`;
