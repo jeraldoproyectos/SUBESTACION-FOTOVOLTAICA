@@ -1,100 +1,90 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <title>GESTIÓN TÉCNICA - SUBESTACIÓN</title>
+    <title>SUBESTACION FOTOVOLTAICA - GESTOR</title>
     <meta charset="utf-8" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
-        :root { 
-            --navy-dark: #0f172a; 
-            --navy-light: #1e293b;
-            --accent-blue: #3b82f6; 
-            --utm-green: #22c55e;
-            --project-gold: #f59e0b;
-            --text-main: #f8fafc;
-            --bg-sidebar: #ffffff;
-        }
-
-        body { margin: 0; padding: 0; background: var(--navy-dark); font-family: 'Inter', sans-serif; display: flex; height: 100vh; overflow: hidden; }
+        :root { --primary-blue: #1976d2; --bg-dark: #1a1a1a; --utm-green: #00ff00; }
+        body { margin: 0; padding: 0; background: var(--bg-dark); font-family: 'Segoe UI', sans-serif; display: flex; height: 100vh; overflow: hidden; color: white; }
 
         /* SIDEBAR */
-        #sidebar { width: 320px; background: var(--bg-sidebar); border-right: 1px solid #e2e8f0; display: flex; flex-direction: column; z-index: 2500; }
-        .sidebar-header { padding: 20px; background: var(--navy-dark); color: white; border-bottom: 4px solid var(--accent-blue); }
-        .sidebar-scroll { flex-grow: 1; overflow-y: auto; padding: 15px; background: #f8fafc; }
-        .section-title { font-weight: 800; font-size: 10px; color: #94a3b8; text-transform: uppercase; margin: 20px 0 10px; letter-spacing: 1.5px; border-bottom: 1px solid #e2e8f0; }
+        #sidebar { width: 340px; background: #f4f6f8; border-right: 1px solid #ddd; display: flex; flex-direction: column; z-index: 2500; color: #333; }
+        .sidebar-header { padding: 15px; background: white; border-bottom: 1px solid #ddd; text-align: center; }
+        .sidebar-scroll { flex-grow: 1; overflow-y: auto; padding: 15px; }
+        .section-title { font-weight: bold; font-size: 11px; color: #888; text-transform: uppercase; margin: 15px 0 8px; letter-spacing: 1px; }
 
-        /* CARDS */
-        .feature-card { background: white; border: 1px solid #e2e8f0; border-radius: 6px; margin-bottom: 10px; cursor: pointer; border-left: 4px solid #cbd5e1; }
-        .feature-card.selected { border-left-color: var(--accent-blue); background: #eff6ff; }
-        .card-header { padding: 10px; display: flex; justify-content: space-between; align-items: center; }
-        .card-title { font-weight: 600; color: #334155; font-size: 12px; }
+        /* CARDS ACORDEÓN */
+        .feature-card { background: white; border: 1px solid #e0e0e0; border-radius: 8px; margin-bottom: 8px; transition: 0.2s; cursor: pointer; overflow: hidden; }
+        .feature-card.selected { border-color: var(--primary-blue); border-left: 6px solid var(--primary-blue); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        .card-header { padding: 12px; display: flex; justify-content: space-between; align-items: center; }
+        .card-title { font-weight: bold; color: #444; font-size: 13px; }
+        .selected .card-title { color: var(--primary-blue); }
+        .card-content { display: none; padding: 12px; border-top: 1px solid #f0f0f0; background: #fafafa; }
+        .selected .card-content { display: block; }
+        .utm-row { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #eee; align-items: center; font-family: monospace; font-size: 11px; }
+        
+        .remove-v { color: #d32f2f; cursor: pointer; font-size: 18px; font-weight: 900; margin-left: 15px; }
 
-        /* UI MAPA */
+        .edit-controls { display: flex; gap: 8px; margin-top: 10px; }
+        .btn-action { flex: 1; border: none; padding: 8px; border-radius: 4px; font-size: 10px; font-weight: bold; cursor: pointer; text-transform: uppercase; }
+        .btn-add { background: #333; color: white; }
+        .btn-save { background: var(--primary-blue); color: white; }
+        .btn-del-main { background: none; color: #d32f2f; border: none; font-size: 10px; cursor: pointer; font-weight: bold; }
+
+        /* MAPA Y UI */
         #map-container { flex-grow: 1; position: relative; }
-        #map { width: 100%; height: 100%; background: #020617; }
+        #map { width: 100%; height: 100%; background: #111; cursor: crosshair; }
         
-        /* BARRA INFERIOR */
-        .ui-bottom { position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%); width: 550px; z-index: 2000; display: flex; flex-direction: column; align-items: center; gap: 12px; }
-        .utm-box { background: var(--navy-dark); color: var(--utm-green); padding: 6px 14px; border-radius: 20px; font-family: monospace; font-size: 11px; border: 1px solid var(--navy-light); }
-        
-        .controls-wrapper { 
-            background: rgba(15, 23, 42, 0.9); padding: 15px 25px; border-radius: 50px; width: 100%; 
-            border: 1px solid rgba(255,255,255,0.1); display: flex; align-items: center; gap: 20px;
-            backdrop-filter: blur(8px); box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.5);
-        }
+        .brand-logo { position: absolute; bottom: 20px; left: 20px; z-index: 2000; width: 150px; filter: drop-shadow(0 2px 5px rgba(0,0,0,0.7)); pointer-events: none; }
+        .corner-logo { position: absolute; top: 15px; right: 15px; z-index: 2000; width: 80px; pointer-events: none; }
 
-        .slider-section { flex-grow: 1; display: flex; flex-direction: column; }
-        .current-date-label { color: white; font-size: 10px; font-weight: 700; text-transform: uppercase; margin-bottom: 4px; }
-        input[type=range] { width: 100%; accent-color: var(--accent-blue); cursor: pointer; }
+        .ui-bottom { position: absolute; bottom: 25px; left: 50%; transform: translateX(-50%); width: 300px; z-index: 2000; display: flex; flex-direction: column; align-items: center; gap: 8px; }
+        .utm-box { background: rgba(0,0,0,0.9); color: var(--utm-green); padding: 5px 12px; border-radius: 4px; border: 1px solid #444; font-family: monospace; font-size: 11px; }
+        .slider-wrapper { background: rgba(0,0,0,0.9); padding: 10px; border-radius: 8px; width: 100%; border: 1px solid #333; text-align: center; }
+        .current-date-label { color: var(--utm-green); font-size: 11px; font-weight: bold; border: 1px solid var(--utm-green); padding: 2px 8px; border-radius: 4px; margin-bottom: 6px; display: inline-block; }
+        input[type=range] { width: 100%; accent-color: var(--utm-green); cursor: pointer; }
 
-        /* TICKET PROYECTO */
-        .project-toggle { border-left: 1px solid rgba(255,255,255,0.2); padding-left: 20px; }
-        .ticket-container { display: flex; align-items: center; gap: 10px; cursor: pointer; }
-        .ticket-container span { font-size: 11px; font-weight: 800; color: var(--project-gold); text-transform: uppercase; }
-        .ticket-container input { width: 18px; height: 18px; cursor: pointer; accent-color: var(--project-gold); }
-
-        /* TOOLBAR */
-        #toolbar { position: absolute; right: 20px; top: 50%; transform: translateY(-50%); z-index: 2000; display: flex; flex-direction: column; gap: 12px; }
-        .tool-btn { width: 48px; height: 48px; background: white; border-radius: 12px; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
-        .tool-btn.active { background: var(--accent-blue); }
-        .tool-btn svg { width: 22px; height: 22px; stroke: #475569; fill: none; stroke-width: 2.5; }
+        #toolbar { position: absolute; right: 15px; top: 50%; transform: translateY(-50%); z-index: 2000; display: flex; flex-direction: column; gap: 10px; }
+        .tool-btn { width: 44px; height: 44px; background: white; border-radius: 10px; border: 1px solid #ccc; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 6px rgba(0,0,0,0.3); }
+        .tool-btn.active { background: var(--primary-blue); border-color: white; }
+        .tool-btn svg { width: 22px; height: 22px; stroke: #333; fill: none; stroke-width: 2; }
         .tool-btn.active svg { stroke: white; }
+
+        .point-name-label { font-weight: bold; color: #00ffff; font-size: 10px; text-shadow: 1px 1px 2px #000; white-space: nowrap; pointer-events: none; }
     </style>
 </head>
 <body>
 
 <div id="sidebar">
-    <div class="sidebar-header"><h3>Control de Obra</h3></div>
+    <div class="sidebar-header"><h3>ELEMENTOS</h3></div>
     <div class="sidebar-scroll">
-        <div class="section-title">Líneas</div><div id="list-line"></div>
-        <div class="section-title">Áreas</div><div id="list-area"></div>
-        <div class="section-title">Puntos</div><div id="list-point"></div>
+        <div class="section-title">Líneas</div>
+        <div id="list-line"></div>
+        <div class="section-title">Áreas</div>
+        <div id="list-area"></div>
+        <div class="section-title">Puntos</div>
+        <div id="list-point"></div>
     </div>
 </div>
 
 <div id="map-container">
     <div id="map"></div>
     
+    <img src="logo.jpg" class="brand-logo" alt="Logo">
+    <img src="pngegg.png" class="corner-logo" alt="Logo Esquina">
+
     <div id="toolbar">
-        <button class="tool-btn" id="btn-line"><svg viewBox="0 0 24 24"><path d="M5 19L19 5"/></svg></button>
-        <button class="tool-btn" id="btn-area"><svg viewBox="0 0 24 24"><path d="M4 4h10l6 6-6 6H4z"/></svg></button>
-        <button class="tool-btn" id="btn-point"><svg viewBox="0 0 24 24"><circle cx="12" cy="10" r="3"/><path d="M12 21s-9-9-9-13a9 9 0 0118 0c0 4-9 13-9 13z"/></svg></button>
+        <button class="tool-btn" id="btn-line" title="Dibujar Línea"><svg viewBox="0 0 24 24"><path d="M5 19L19 5"/></svg></button>
+        <button class="tool-btn" id="btn-area" title="Dibujar Área"><svg viewBox="0 0 24 24"><path d="M4 4h10l6 6-6 6H4z"/></svg></button>
+        <button class="tool-btn" id="btn-point" title="Marcar Punto"><svg viewBox="0 0 24 24"><circle cx="12" cy="10" r="3"/><path d="M12 21s-9-9-9-13a9 9 0 0118 0c0 4-9 13-9 13z"/></svg></button>
     </div>
 
     <div class="ui-bottom">
         <div class="utm-box" id="utm-coord">E: --- | N: ---</div>
-        <div class="controls-wrapper">
-            <div class="slider-section">
-                <div id="fecha-label" class="current-date-label">FECHA DE VUELO</div>
-                <input type="range" id="smooth-slider" min="0" value="0" step="1">
-            </div>
-
-            <div class="project-toggle">
-                <label class="ticket-container">
-                    <input type="checkbox" id="check-project" checked>
-                    <span>PROYECTO</span>
-                </label>
-            </div>
+        <div class="slider-wrapper">
+            <div id="fecha-label" class="current-date-label">CARGANDO...</div>
+            <input type="range" id="smooth-slider" min="0" value="0" step="1">        
         </div>
     </div>
 </div>
@@ -103,7 +93,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.9.0/proj4.js"></script>
 
 <script>
-    // 1. UTM
+    // 1. CONFIGURACIÓN UTM Y MAPA
     var utm19S = "+proj=utm +zone=19 +south +datum=WGS84 +units=m +no_defs";
     var wgs84 = "+proj=longlat +datum=WGS84 +no_defs";
     const toUTM = (ll) => {
@@ -112,23 +102,36 @@
     };
 
     var map = L.map('map', { zoomControl: false, minZoom: 17, maxZoom: 23 }).setView([-20.351387, -69.721985], 19);
-    L.tileLayer('https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', { maxZoom: 23, opacity: 0.5 }).addTo(map);
+    L.tileLayer('https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', { maxZoom: 23 }).addTo(map);
 
-    // 2. CAPA PROYECTO (NORTE PRESERVADO)
+    // --- AGREGADO: PANE Y PLANO DE FUNDACIONES ---
     map.createPane('planoPane');
     map.getPane('planoPane').style.zIndex = 1000;
-    var imageBounds = [[-20.3516049645341, -69.7225702970685], [-20.3507350930697, -69.7212299365804]];
-    var planoProyecto = L.imageOverlay('fundaciones.png', imageBounds, { pane: 'planoPane', opacity: 0.8 }).addTo(map);
+    map.getPane('planoPane').style.pointerEvents = 'none';
 
-    document.getElementById('check-project').onchange = function() {
-        if (this.checked) planoProyecto.addTo(map); else map.removeLayer(planoProyecto);
-    };
+    var imageBounds = [
+        [-20.3516049645341, -69.7225702970685], // Sur-Oeste
+        [-20.3507350930697, -69.7212299365804]  // Norte-Este
+    ];
 
-    // 3. ORTOFOTOS SLIDER
-    var fechas = ["03/12/2025", "09/01/2026", "21/01/2026", "23/01/2026", "28/01/2026", "06/02/2026", "07/02/2026"];
-    var capas = fechas.map((f, i) => {
-        return L.tileLayer(f.replace(/\//g, '') + '/Z{z}/{y}/{x}.png', { maxZoom: 23, opacity: (i === 0 ? 1 : 0) }).addTo(map);
-    });
+    L.imageOverlay('fundaciones.png', imageBounds, {
+        pane: 'planoPane',
+        opacity: 0.9,
+        interactive: false
+    }).addTo(map);
+    // ----------------------------------------------
+
+    // 2. LÓGICA DE ORTOFOTOS (SLIDER)
+    var fechas = ["03/12/2025", "09/01/2026", "21/01/2026", "23/01/2026", "28/01/2026", "06/02/2026","07/02/2026"];
+    var capas = [
+        L.tileLayer('03122025/Z{z}/{y}/{x}.png', { maxZoom: 23, opacity: 1 }).addTo(map),
+        L.tileLayer('09012026/Z{z}/{y}/{x}.png', { maxZoom: 23, opacity: 0 }).addTo(map),
+        L.tileLayer('21012026/Z{z}/{y}/{x}.png', { maxZoom: 23, opacity: 0 }).addTo(map),
+        L.tileLayer('23012026/Z{z}/{y}/{x}.png', { maxZoom: 23, opacity: 0 }).addTo(map),
+        L.tileLayer('28012026/Z{z}/{y}/{x}.png', { maxZoom: 23, opacity: 0 }).addTo(map),
+        L.tileLayer('06022026/Z{z}/{y}/{x}.png', { maxZoom: 23, opacity: 0 }).addTo(map),
+        L.tileLayer('07022026/Z{z}/{y}/{x}.png', { maxZoom: 23, opacity: 0 }).addTo(map)
+    ];
 
     var slider = document.getElementById('smooth-slider');
     slider.max = (capas.length - 1) * 100;
@@ -138,24 +141,24 @@
         var idx = Math.floor(val / 100);
         var sub = (val % 100) / 100;
         if (idx >= capas.length - 1) { idx = capas.length - 2; sub = 1; }
-        capas.forEach((c, i) => {
-            let op = (i === idx) ? 1 - sub : (i === idx + 1 ? sub : 0);
-            c.setOpacity(op);
-        });
-        document.getElementById('fecha-label').innerText = "Vuelo: " + ((sub > 0.5) ? fechas[idx + 1] : fechas[idx]);
+        capas.forEach((c, i) => c.setOpacity(i === idx ? 1 - sub : (i === idx + 1 ? sub : 0)));
+        document.getElementById('fecha-label').innerText = (sub > 0.5) ? fechas[idx + 1] : fechas[idx];
     }
     slider.oninput = updateView;
     updateView();
 
-    // 4. LÓGICA DE HERRAMIENTAS
-    let currentMode = null, drawingPoints = [], tempLayer = null;
+    // 3. LÓGICA DE HERRAMIENTAS DE MEDICIÓN
+    let currentMode = null, drawingPoints = [], tempLayer = null, guideLine = null;
     let features = {}, counters = { line: 0, area: 0, point: 0 };
+    let selectedId = null, editMarkers = [], pointLabels = {};
 
     function setMode(mode) {
-        currentMode = mode; drawingPoints = [];
-        if(tempLayer) map.removeLayer(tempLayer);
+        currentMode = mode;
+        if(mode !== 'add-v') { drawingPoints = []; if(tempLayer) map.removeLayer(tempLayer); }
+        if(guideLine) map.removeLayer(guideLine);
         document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
-        if(mode) document.getElementById(`btn-${mode}`).classList.add('active');
+        if(mode && mode !== 'add-v') document.getElementById(`btn-${mode}`).classList.add('active');
+        map.getContainer().style.cursor = mode ? 'crosshair' : '';
     }
 
     document.getElementById('btn-line').onclick = () => setMode('line');
@@ -165,39 +168,162 @@
     map.on('mousemove', (e) => {
         const utm = toUTM(e.latlng);
         document.getElementById('utm-coord').innerText = `E: ${utm.x.toFixed(2)} | N: ${utm.y.toFixed(2)}`;
+        
+        if (currentMode && drawingPoints.length > 0) {
+            if (guideLine) map.removeLayer(guideLine);
+            let pts = [drawingPoints[drawingPoints.length - 1], e.latlng];
+            if (currentMode === 'area' && drawingPoints.length > 1) {
+                // Solo mostrar cierre si hay al menos 3 puntos
+                pts = [drawingPoints[drawingPoints.length-1], e.latlng];
+                if (drawingPoints.length >= 3) {
+                     pts = [drawingPoints[drawingPoints.length-1], e.latlng, drawingPoints[0]];
+                }
+            }
+            guideLine = L.polyline(pts, { color: 'white', weight: 1, dashArray: '5, 10' }).addTo(map);
+        }
     });
 
     map.on('click', (e) => {
         if (!currentMode) return;
-        if (currentMode === 'point') { 
-            createFeature('point', [e.latlng]); setMode(null); 
-        } else if (currentMode === 'line') {
+        if (currentMode === 'point') { createFeature('point', [e.latlng]); setMode(null); }
+        else if (currentMode === 'line') {
             drawingPoints.push(e.latlng);
             if (drawingPoints.length === 2) { createFeature('line', [...drawingPoints]); setMode(null); }
         } else if (currentMode === 'area') {
-            if (drawingPoints.length >= 3 && map.distance(e.latlng, drawingPoints[0]) < 10) {
-                createFeature('area', [...drawingPoints]); setMode(null);
+            // Lógica modificada: Min 3 vértices para área
+            if (drawingPoints.length >= 3 && map.distance(e.latlng, drawingPoints[0]) < 15) {
+                createFeature('area', [...drawingPoints]); 
+                setMode(null);
             } else {
                 drawingPoints.push(e.latlng);
                 if (tempLayer) map.removeLayer(tempLayer);
-                tempLayer = L.polyline(drawingPoints, {color: 'var(--accent-blue)'}).addTo(map);
+                tempLayer = L.polyline(drawingPoints, {color:'red', weight: 2}).addTo(map);
             }
+        } else if (currentMode === 'add-v' && selectedId) {
+            insertVertexNear(selectedId, e.latlng);
         }
     });
 
     function createFeature(type, coords) {
         const id = Date.now(); counters[type]++;
-        let layer, name = `${type==='line'?'LÍNEA':type==='area'?'ÁREA':'PTO'} ${counters[type]}`;
-        
-        if(type === 'line') layer = L.polyline(coords, {color:'var(--accent-blue)', weight:4}).addTo(map);
-        else if(type === 'area') layer = L.polygon(coords, {color:'var(--accent-blue)', weight:2, fillOpacity:0.4}).addTo(map);
-        else layer = L.circleMarker(coords[0], { radius: 7, color: 'white', fillColor: 'var(--accent-blue)', fillOpacity: 1 }).addTo(map);
+        let layer, name = `${type==='line'?'LÍNEA':type==='area'?'ÁREA':'PUNTO'} ${counters[type]}`;
 
-        features[id] = { id, type, layer };
+        if(type === 'line') layer = L.polyline(coords, {color:'red', weight:3}).addTo(map);
+        else if(type === 'area') layer = L.polygon(coords, {color:'red', weight:2, fillOpacity:0.3}).addTo(map);
+        else {
+            layer = L.circleMarker(coords[0], { radius: 6, color: 'red', fillColor: 'white', fillOpacity: 1 }).addTo(map);
+            const lbl = L.marker(coords[0], { icon: L.divIcon({ className:'point-name-label', html: name, iconAnchor:[40,25] }), interactive:false }).addTo(map);
+            pointLabels[id] = lbl;
+        }
+
+        features[id] = { id, type, name, layer };
+        addSidebarCard(id);
+        layer.on('click', (ev) => { L.DomEvent.stopPropagation(ev); selectFeature(id); });
+        selectFeature(id);
+    }
+
+    function addSidebarCard(id) {
+        const f = features[id];
         const card = document.createElement('div');
-        card.className = 'feature-card';
-        card.innerHTML = `<div class="card-header"><span class="card-title">${name}</span></div>`;
-        document.getElementById(`list-${type}`).appendChild(card);
+        card.className = 'feature-card'; card.id = `card-${id}`;
+        card.onclick = () => selectFeature(id);
+        card.innerHTML = `
+            <div class="card-header">
+                <span class="card-title" id="title-${id}">${f.name}</span>
+                <button class="btn-del-main" onclick="deleteFeat(${id}, event)">ELIMINAR</button>
+            </div>
+            <div class="card-content">
+                <div id="coords-${id}"></div>
+                ${f.type !== 'point' ? `<div class="edit-controls">
+                    <button class="btn-action btn-add" onclick="event.stopPropagation(); setMode('add-v');">+ PUNTO</button>
+                    <button class="btn-action btn-save" onclick="event.stopPropagation(); setMode(null); deselectAll();">ACEPTAR</button>
+                </div>` : ''}
+            </div>`;
+        document.getElementById(`list-${f.type}`).appendChild(card);
+        updateCardData(id);
+    }
+
+    function calculateArea(latlngs) {
+        let area = 0; const utms = latlngs.map(ll => toUTM(ll));
+        for (let i = 0; i < utms.length; i++) {
+            let j = (i + 1) % utms.length;
+            area += utms[i].x * utms[j].y; area -= utms[j].x * utms[i].y;
+        }
+        return Math.abs(area) / 2;
+    }
+
+    function updateCardData(id) {
+        const f = features[id];
+        let latlngs = f.type === 'point' ? [f.layer.getLatLng()] : (f.type === 'area' ? f.layer.getLatLngs()[0] : f.layer.getLatLngs());
+        if(f.type === 'line') {
+            let d = 0; for(let i=0; i<latlngs.length-1; i++) d += map.distance(latlngs[i], latlngs[i+1]);
+            document.getElementById(`title-${id}`).innerText = `${f.name}: ${d.toFixed(2)} m`;
+        } else if(f.type === 'area') {
+            document.getElementById(`title-${id}`).innerText = `${f.name}: ${calculateArea(latlngs).toFixed(2)} m²`;
+        }
+        document.getElementById(`coords-${id}`).innerHTML = latlngs.map((ll, i) => {
+            const u = toUTM(ll);
+            return `<div class="utm-row"><span>V${i+1}: E ${u.x.toFixed(2)} | N ${u.y.toFixed(2)}</span>
+            ${latlngs.length>(f.type==='area'?3:2)?`<span class="remove-v" onclick="removeVertex(${id},${i});event.stopPropagation();">X</span>`:''}</div>`;
+        }).join('');
+    }
+
+    function selectFeature(id) {
+        deselectAll(); selectedId = id;
+        const f = features[id];
+        document.getElementById(`card-${id}`).classList.add('selected');
+        if(f.type !== 'point') { f.layer.setStyle({color:'cyan', weight:4}); showEditNodes(id); }
+    }
+
+    function deselectAll() {
+        selectedId = null; editMarkers.forEach(m => map.removeLayer(m));
+        Object.values(features).forEach(f => {
+            if(f.type !== 'point') f.layer.setStyle({color:'red', weight:2});
+            const el = document.getElementById(`card-${f.id}`); if(el) el.classList.remove('selected');
+        });
+    }
+
+    function showEditNodes(id) {
+        editMarkers.forEach(m => map.removeLayer(m)); editMarkers = [];
+        const f = features[id];
+        let latlngs = f.type === 'area' ? f.layer.getLatLngs()[0] : f.layer.getLatLngs();
+        latlngs.forEach((ll, i) => {
+            const m = L.circleMarker(ll, { radius:6, color:'cyan', fillColor:'white', fillOpacity:1, interactive:true }).addTo(map);
+            m.on('mousedown', () => {
+                map.dragging.disable();
+                map.on('mousemove', (ev) => {
+                    m.setLatLng(ev.latlng); latlngs[i] = ev.latlng;
+                    f.layer.setLatLngs(f.type === 'area' ? [latlngs] : latlngs);
+                    updateCardData(id);
+                });
+                map.on('mouseup', () => { map.dragging.enable(); map.off('mousemove'); });
+            });
+            editMarkers.push(m);
+        });
+    }
+
+    function insertVertexNear(id, ll) {
+        const f = features[id]; let latlngs = f.type === 'area' ? f.layer.getLatLngs()[0] : f.layer.getLatLngs();
+        let minDist = Infinity, idx = 1;
+        for (let i = 0; i < latlngs.length; i++) {
+            let j = (i + 1) % latlngs.length; if(f.type === 'line' && i === latlngs.length - 1) break;
+            let d = L.LineUtil.pointToSegmentDistance(map.latLngToLayerPoint(ll), map.latLngToLayerPoint(latlngs[i]), map.latLngToLayerPoint(latlngs[j]));
+            if (d < minDist) { minDist = d; idx = j; }
+        }
+        latlngs.splice(idx, 0, ll); f.layer.setLatLngs(f.type === 'area' ? [latlngs] : latlngs);
+        updateCardData(id); showEditNodes(id);
+    }
+
+    function removeVertex(id, idx) {
+        const f = features[id]; let latlngs = f.type === 'area' ? f.layer.getLatLngs()[0] : f.layer.getLatLngs();
+        latlngs.splice(idx, 1); f.layer.setLatLngs(f.type === 'area' ? [latlngs] : latlngs);
+        updateCardData(id); showEditNodes(id);
+    }
+
+    function deleteFeat(id, ev) {
+        ev.stopPropagation(); map.removeLayer(features[id].layer);
+        if(pointLabels[id]) map.removeLayer(pointLabels[id]);
+        document.getElementById(`card-${id}`).remove(); delete features[id]; deselectAll();
     }
 </script>
 </body>
