@@ -1,117 +1,104 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <title>SISTEMA DE GESTIÓN - SUBESTACIÓN</title>
+    <title>GESTOR DE AVANCE - SUBESTACIÓN</title>
     <meta charset="utf-8" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
-        :root { 
-            --navy-dark: #0f172a; --navy-light: #1e293b; --accent-blue: #3b82f6; 
-            --utm-green: #22c55e; --project-gold: #f59e0b; --text-main: #f8fafc;
-        }
-
-        body { margin: 0; padding: 0; background: var(--navy-dark); font-family: 'Inter', sans-serif; display: flex; height: 100vh; overflow: hidden; }
+        :root { --primary-blue: #1976d2; --bg-dark: #1a1a1a; --utm-green: #00ff00; }
+        body { margin: 0; padding: 0; background: var(--bg-dark); font-family: 'Segoe UI', sans-serif; display: flex; height: 100vh; overflow: hidden; color: white; }
 
         /* SIDEBAR */
-        #sidebar { width: 320px; background: #ffffff; border-right: 1px solid #e2e8f0; display: flex; flex-direction: column; z-index: 2500; }
-        .sidebar-header { padding: 20px; background: var(--navy-dark); color: white; border-bottom: 4px solid var(--accent-blue); }
-        .sidebar-scroll { flex-grow: 1; overflow-y: auto; padding: 15px; background: #f8fafc; color: #334155; }
-        .section-title { font-weight: 800; font-size: 10px; color: #94a3b8; text-transform: uppercase; margin: 20px 0 10px; letter-spacing: 1.5px; border-bottom: 1px solid #e2e8f0; }
+        #sidebar { width: 340px; background: #f4f6f8; border-right: 1px solid #ddd; display: flex; flex-direction: column; z-index: 2500; color: #333; }
+        .sidebar-header { padding: 15px; background: white; border-bottom: 1px solid #ddd; text-align: center; }
+        .sidebar-scroll { flex-grow: 1; overflow-y: auto; padding: 15px; }
+        .section-title { font-weight: bold; font-size: 11px; color: #888; text-transform: uppercase; margin: 15px 0 8px; letter-spacing: 1px; }
 
-        /* MAPA */
+        /* CARDS MEDICIONES */
+        .feature-card { background: white; border: 1px solid #e0e0e0; border-radius: 8px; margin-bottom: 8px; cursor: pointer; overflow: hidden; }
+        .feature-card.selected { border-left: 6px solid var(--primary-blue); border-color: var(--primary-blue); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        .card-header { padding: 10px; display: flex; justify-content: space-between; align-items: center; }
+        .card-title { font-weight: bold; font-size: 12px; color: #444; }
+        .card-content { display: none; padding: 10px; border-top: 1px solid #eee; background: #fafafa; }
+        .selected .card-content { display: block; }
+        .utm-row { font-family: monospace; font-size: 10px; display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid #eee; align-items: center; }
+        .remove-v { color: #d32f2f; font-weight: bold; cursor: pointer; margin-left: 10px; font-size: 14px; }
+
+        /* UI MAPA */
         #map-container { flex-grow: 1; position: relative; }
-        #map { width: 100%; height: 100%; background: #020617; }
+        #map { width: 100%; height: 100%; background: #111; cursor: crosshair; }
         
-        /* BARRA INFERIOR */
-        .ui-bottom { position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%); width: 600px; z-index: 2000; display: flex; flex-direction: column; align-items: center; gap: 12px; }
-        .utm-box { background: var(--navy-dark); color: var(--utm-green); padding: 6px 14px; border-radius: 20px; font-family: monospace; font-size: 11px; border: 1px solid var(--navy-light); box-shadow: 0 10px 15px rgba(0,0,0,0.5); }
+        .ui-bottom { position: absolute; bottom: 25px; left: 50%; transform: translateX(-50%); width: 450px; z-index: 2000; display: flex; flex-direction: column; align-items: center; gap: 8px; }
+        .utm-box { background: rgba(0,0,0,0.85); color: var(--utm-green); padding: 5px 12px; border-radius: 4px; font-family: monospace; font-size: 11px; border: 1px solid #444; }
         
-        .controls-wrapper { 
-            background: rgba(15, 23, 42, 0.95); padding: 15px 25px; border-radius: 50px; width: 100%; 
-            border: 1px solid rgba(255,255,255,0.1); display: flex; align-items: center; gap: 20px;
-            backdrop-filter: blur(10px); box-shadow: 0 20px 25px rgba(0,0,0,0.5);
+        .comparator-wrapper { 
+            background: rgba(0,0,0,0.9); padding: 12px; border-radius: 12px; width: 100%; 
+            border: 1px solid #444; display: flex; justify-content: space-between; align-items: center; gap: 10px;
         }
+        .selector-group { display: flex; flex-direction: column; flex: 1; }
+        .selector-group label { font-size: 9px; color: #aaa; text-transform: uppercase; margin-bottom: 3px; font-weight: bold; }
+        select { background: #222; color: white; border: 1px solid #444; padding: 5px; border-radius: 4px; font-size: 11px; cursor: pointer; }
 
-        .slider-section { flex-grow: 1; display: flex; flex-direction: column; }
-        .current-date-label { color: white; font-size: 10px; font-weight: 700; text-transform: uppercase; margin-bottom: 4px; letter-spacing: 1px; }
-        input[type=range] { width: 100%; accent-color: var(--accent-blue); cursor: pointer; }
-
-        /* BOTÓN PROYECTO */
-        .project-toggle { border-left: 1px solid rgba(255,255,255,0.2); padding-left: 20px; display: flex; align-items: center; }
-        .btn-project { 
-            background: none; border: 2px solid var(--project-gold); color: var(--project-gold);
-            padding: 8px 16px; border-radius: 20px; font-weight: 800; font-size: 11px; 
-            cursor: pointer; transition: 0.3s; text-transform: uppercase;
-        }
-        .btn-project.active { background: var(--project-gold); color: var(--navy-dark); }
-
-        /* PANEL DE STRETCH (CALIBRACIÓN) */
-        #calibration-panel { 
-            position: absolute; top: 20px; left: 340px; background: rgba(15, 23, 42, 0.9); 
-            padding: 15px; border-radius: 12px; z-index: 2000; display: none; border: 1px solid var(--accent-blue);
-            width: 200px; font-size: 11px;
-        }
-        .cal-row { margin-bottom: 10px; }
-        .cal-row label { display: block; margin-bottom: 4px; color: var(--text-main); }
-        .cal-row input { width: 100%; }
-
-        /* TOOLBAR */
-        #toolbar { position: absolute; right: 20px; top: 50%; transform: translateY(-50%); z-index: 2000; display: flex; flex-direction: column; gap: 12px; }
-        .tool-btn { width: 48px; height: 48px; background: white; border-radius: 12px; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(0,0,0,0.2); transition: 0.2s; }
-        .tool-btn:hover { background: #f1f5f9; }
-        .tool-btn.active { background: var(--accent-blue); }
-        .tool-btn svg { width: 22px; height: 22px; stroke: #475569; fill: none; stroke-width: 2.5; }
+        /* BARRA HERRAMIENTAS */
+        #toolbar { position: absolute; right: 15px; top: 50%; transform: translateY(-50%); z-index: 2000; display: flex; flex-direction: column; gap: 10px; }
+        .tool-btn { width: 44px; height: 44px; background: white; border-radius: 10px; border: 1px solid #ccc; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 6px rgba(0,0,0,0.2); }
+        .tool-btn.active { background: var(--primary-blue); border-color: white; }
+        .tool-btn svg { width: 22px; height: 22px; stroke: #333; fill: none; stroke-width: 2; }
         .tool-btn.active svg { stroke: white; }
+        #btn-project.active { background: #ff9800; border-color: white; }
+        #btn-project.active svg { stroke: white; }
+
+        .leaflet-sbs-divider { width: 4px; background-color: var(--utm-green); box-shadow: 0 0 10px rgba(0,255,0,0.5); }
+        .point-name-label { font-weight: bold; color: #00ffff; font-size: 10px; text-shadow: 1px 1px 2px #000; white-space: nowrap; pointer-events: none; }
+        .btn-del-main { background: none; color: #d32f2f; border: none; font-size: 10px; cursor: pointer; font-weight: bold; }
     </style>
 </head>
 <body>
 
-<div id="calibration-panel">
-    <div style="font-weight: bold; color: var(--accent-blue); margin-bottom: 10px;">CALIBRACIÓN STRETCH</div>
-    <div class="cal-row"><label>Desplazar Norte</label><input type="range" id="cal-n" min="-50" max="50" value="26"></div>
-    <div class="cal-row"><label>Desplazar Este</label><input type="range" id="cal-e" min="-50" max="50" value="7"></div>
-    <div class="cal-row"><label>Estirar V (Alto)</label><input type="range" id="cal-sh" min="-50" max="50" value="0"></div>
-    <div class="cal-row"><label>Estirar H (Ancho)</label><input type="range" id="cal-sv" min="-50" max="50" value="0"></div>
-    <button onclick="document.getElementById('calibration-panel').style.display='none'" style="width:100%; cursor:pointer;">Cerrar</button>
-</div>
-
 <div id="sidebar">
-    <div class="sidebar-header"><h3>GESTIÓN TÉCNICA</h3></div>
+    <div class="sidebar-header"><h3>GESTIÓN DE SUBESTACIÓN</h3></div>
     <div class="sidebar-scroll">
-        <div class="section-title">Mediciones de Campo</div><div id="list-line"></div>
-        <div class="section-title">Cómputo de Superficie</div><div id="list-area"></div>
-        <div class="section-title">Puntos Críticos</div><div id="list-point"></div>
+        <div class="section-title">Líneas</div><div id="list-line"></div>
+        <div class="section-title">Áreas</div><div id="list-area"></div>
+        <div class="section-title">Puntos</div><div id="list-point"></div>
     </div>
 </div>
 
 <div id="map-container">
     <div id="map"></div>
-    <div id="toolbar">
-        <button class="tool-btn" id="btn-line"><svg viewBox="0 0 24 24"><path d="M5 19L19 5"/></svg></button>
-        <button class="tool-btn" id="btn-area"><svg viewBox="0 0 24 24"><path d="M4 4h10l6 6-6 6H4z"/></svg></button>
-        <button class="tool-btn" id="btn-point"><svg viewBox="0 0 24 24"><circle cx="12" cy="10" r="3"/><path d="M12 21s-9-9-9-13a9 9 0 0118 0c0 4-9 13-9 13z"/></svg></button>
-        <button class="tool-btn" onclick="document.getElementById('calibration-panel').style.display='block'" title="Ajuste Stretch"><svg viewBox="0 0 24 24" style="stroke: var(--project-gold);"><path d="M12 15a3 3 0 100-6 3 3 0 000 6z"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/></svg></button>
-    </div>
-
+    
     <div class="ui-bottom">
-        <div class="utm-box" id="utm-coord">E: 424,000.00 | N: 7,749,000.00</div>
-        <div class="controls-wrapper">
-            <div class="slider-section">
-                <div id="fecha-label" class="current-date-label">FECHA DE INSPECCIÓN</div>
-                <input type="range" id="smooth-slider" min="0" value="0" step="1">
+        <div class="utm-box" id="utm-coord">E: --- | N: ---</div>
+        <div class="comparator-wrapper">
+            <div class="selector-group">
+                <label>Lado Izquierdo</label>
+                <select id="select-left"></select>
             </div>
-            <div class="project-toggle">
-                <button class="btn-project active" id="toggle-project">PROYECTO: ON</button>
+            <div style="color: var(--utm-green); font-weight: bold;">VS</div>
+            <div class="selector-group">
+                <label>Lado Derecho</label>
+                <select id="select-right"></select>
             </div>
         </div>
+    </div>
+
+    <div id="toolbar">
+        <button class="tool-btn active" id="btn-project" title="Ver/Ocultar Proyecto">
+            <svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+        </button>
+        <div style="height: 1px; background: #ddd; margin: 4px 0;"></div>
+        <button class="tool-btn" id="btn-line" title="Línea"><svg viewBox="0 0 24 24"><path d="M5 19L19 5"/></svg></button>
+        <button class="tool-btn" id="btn-area" title="Área"><svg viewBox="0 0 24 24"><path d="M4 4h10l6 6-6 6H4z"/></svg></button>
+        <button class="tool-btn" id="btn-point" title="Punto"><svg viewBox="0 0 24 24"><circle cx="12" cy="10" r="3"/><path d="M12 21s-9-9-9-13a9 9 0 0118 0c0 4-9 13-9 13z"/></svg></button>
     </div>
 </div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.9.0/proj4.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/digidem/leaflet-side-by-side@gh-pages/leaflet-side-by-side.min.js"></script>
 
 <script>
-    // 1. UTM CONFIG
+    // 1. CONFIGURACIÓN UTM Y MAPA
     var utm19S = "+proj=utm +zone=19 +south +datum=WGS84 +units=m +no_defs";
     var wgs84 = "+proj=longlat +datum=WGS84 +no_defs";
     const toUTM = (ll) => {
@@ -120,78 +107,172 @@
     };
 
     var map = L.map('map', { zoomControl: false, minZoom: 17, maxZoom: 23 }).setView([-20.351387, -69.721985], 19);
-    L.tileLayer('https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', { maxZoom: 23, opacity: 0.4 }).addTo(map);
+    L.tileLayer('https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', { maxZoom: 23 }).addTo(map);
 
-    // 2. PROYECTO & STRETCH DINÁMICO
+    // 2. PLANO DE PROYECTO (CAPA TOGGLEABLE)
     map.createPane('planoPane');
-    map.getPane('planoPane').style.zIndex = 1000;
-    
-    var sw_base = [-20.3516049645341, -69.7225702970685];
-    var ne_base = [-20.3507350930697, -69.7212299365804];
-    var planoProyecto = null;
+    map.getPane('planoPane').style.zIndex = 600; // Por encima de ortos, debajo de dibujos
+    var imageBounds = [[-20.3516073045341, -69.7225709670685], [-20.3507374330697, -69.7212306065804]];
+    var planoProyecto = L.imageOverlay('fundaciones.png', imageBounds, { pane: 'planoPane', opacity: 0.8 }).addTo(map);
 
-    function renderPlano() {
-        if (planoProyecto) map.removeLayer(planoProyecto);
-        
-        let dN = parseFloat(document.getElementById('cal-n').value) / 100000;
-        let dE = parseFloat(document.getElementById('cal-e').value) / 100000;
-        let sV = parseFloat(document.getElementById('cal-sh').value) / 100000;
-        let sH = parseFloat(document.getElementById('cal-sv').value) / 100000;
-
-        let bounds = [
-            [sw_base[0] + dN, sw_base[1] + dE],
-            [ne_base[0] + dN + sV, ne_base[1] + dE + sH]
-        ];
-
-        planoProyecto = L.imageOverlay('fundaciones.png', bounds, { pane: 'planoPane', opacity: 0.85 }).addTo(map);
-    }
-
-    // Eventos de Calibración
-    ['cal-n', 'cal-e', 'cal-sh', 'cal-sv'].forEach(id => {
-        document.getElementById(id).oninput = renderPlano;
-    });
-
-    renderPlano();
-
-    // Botón ON/OFF Proyecto
-    var btnProject = document.getElementById('toggle-project');
-    btnProject.onclick = function() {
-        if (this.classList.contains('active')) {
-            map.removeLayer(planoProyecto);
-            this.classList.remove('active');
-            this.innerText = "PROYECTO: OFF";
-        } else {
-            planoProyecto.addTo(map);
-            this.classList.add('active');
-            this.innerText = "PROYECTO: ON";
-        }
+    document.getElementById('btn-project').onclick = function() {
+        this.classList.toggle('active');
+        if (map.hasLayer(planoProyecto)) map.removeLayer(planoProyecto);
+        else planoProyecto.addTo(map);
     };
 
-    // 3. SLIDER DE FECHAS
+    // 3. COMPARADOR SIDE-BY-SIDE
     var fechas = ["03/12/2025", "09/01/2026", "21/01/2026", "23/01/2026", "28/01/2026", "06/02/2026", "07/02/2026"];
-    var capas = fechas.map((f, i) => {
-        return L.tileLayer(f.replace(/\//g, '') + '/Z{z}/{y}/{x}.png', { maxZoom: 23, opacity: (i === 0 ? 1 : 0) }).addTo(map);
+    var capasInfo = fechas.map(f => ({
+        fecha: f,
+        layer: L.tileLayer(f.replace(/\//g, '') + '/Z{z}/{y}/{x}.png', { maxZoom: 23 })
+    }));
+
+    const selLeft = document.getElementById('select-left');
+    const selRight = document.getElementById('select-right');
+    fechas.forEach((f, i) => {
+        selLeft.add(new Option(f, i));
+        selRight.add(new Option(f, i));
     });
 
-    var slider = document.getElementById('smooth-slider');
-    slider.max = (capas.length - 1) * 100;
+    selLeft.value = 0;
+    selRight.value = fechas.length - 1; // Última visible por defecto
 
-    function updatePhotos() {
-        var val = parseFloat(slider.value);
-        var idx = Math.floor(val / 100);
-        var sub = (val % 100) / 100;
-        if (idx >= capas.length - 1) { idx = capas.length - 2; sub = 1; }
-        capas.forEach((c, i) => c.setOpacity(i === idx ? 1 - sub : (i === idx + 1 ? sub : 0)));
-        document.getElementById('fecha-label').innerText = "Vuelo: " + ((sub > 0.5) ? fechas[idx+1] : fechas[idx]);
+    let leftLayer = capasInfo[selLeft.value].layer.addTo(map);
+    let rightLayer = capasInfo[selRight.value].layer.addTo(map);
+    let sbsControl = L.control.sideBySide(leftLayer, rightLayer).addTo(map);
+
+    function updateComparison() {
+        map.removeLayer(leftLayer);
+        map.removeLayer(rightLayer);
+        leftLayer = capasInfo[selLeft.value].layer.addTo(map);
+        rightLayer = capasInfo[selRight.value].layer.addTo(map);
+        sbsControl.setLeftLayers(leftLayer);
+        sbsControl.setRightLayers(rightLayer);
     }
-    slider.oninput = updatePhotos;
-    updatePhotos();
+    selLeft.onchange = updateComparison;
+    selRight.onchange = updateComparison;
 
-    // 4. COORDINADAS UTM
+    // 4. LÓGICA DE MEDICIÓN (Líneas, Áreas, Puntos)
+    let currentMode = null, drawingPoints = [], tempLayer = null, guideLine = null;
+    let features = {}, counters = { line: 0, area: 0, point: 0 };
+    let selectedId = null, editMarkers = [], pointLabels = {};
+
+    function setMode(mode) {
+        currentMode = mode;
+        drawingPoints = [];
+        if(tempLayer) map.removeLayer(tempLayer);
+        if(guideLine) map.removeLayer(guideLine);
+        document.querySelectorAll('.tool-btn').forEach(b => { if(b.id !== 'btn-project') b.classList.remove('active'); });
+        if(mode) document.getElementById(`btn-${mode}`).classList.add('active');
+    }
+
+    document.getElementById('btn-line').onclick = () => setMode('line');
+    document.getElementById('btn-area').onclick = () => setMode('area');
+    document.getElementById('btn-point').onclick = () => setMode('point');
+
     map.on('mousemove', (e) => {
-        const u = toUTM(e.latlng);
-        document.getElementById('utm-coord').innerText = `E: ${u.x.toLocaleString('en-US', {minimumFractionDigits:2})} | N: ${u.y.toLocaleString('en-US', {minimumFractionDigits:2})}`;
+        const utm = toUTM(e.latlng);
+        document.getElementById('utm-coord').innerText = `E: ${utm.x.toFixed(2)} | N: ${utm.y.toFixed(2)}`;
+        if (currentMode && drawingPoints.length > 0) {
+            if (guideLine) map.removeLayer(guideLine);
+            guideLine = L.polyline([drawingPoints[drawingPoints.length-1], e.latlng], { color: 'white', weight: 1, dashArray: '5,10' }).addTo(map);
+        }
     });
+
+    map.on('click', (e) => {
+        if (!currentMode) return;
+        if (currentMode === 'point') { 
+            createFeature('point', [e.latlng]); 
+            setMode(null); 
+        } else if (currentMode === 'line') {
+            drawingPoints.push(e.latlng);
+            if (drawingPoints.length === 2) { createFeature('line', [...drawingPoints]); setMode(null); }
+        } else if (currentMode === 'area') {
+            if (drawingPoints.length >= 3 && map.distance(e.latlng, drawingPoints[0]) < 15) {
+                createFeature('area', [...drawingPoints]); setMode(null);
+            } else {
+                drawingPoints.push(e.latlng);
+                if (tempLayer) map.removeLayer(tempLayer);
+                tempLayer = L.polyline(drawingPoints, {color:'red'}).addTo(map);
+            }
+        }
+    });
+
+    function createFeature(type, coords) {
+        const id = Date.now(); counters[type]++;
+        let layer, name = `${type==='line'?'LÍNEA':type==='area'?'ÁREA':'PUNTO'} ${counters[type]}`;
+        
+        if(type === 'line') layer = L.polyline(coords, {color:'red', weight:3}).addTo(map);
+        else if(type === 'area') layer = L.polygon(coords, {color:'red', weight:2, fillOpacity:0.3}).addTo(map);
+        else {
+            layer = L.circleMarker(coords[0], { radius: 6, color: 'red', fillColor: 'white', fillOpacity: 1 }).addTo(map);
+            pointLabels[id] = L.marker(coords[0], { icon: L.divIcon({ className:'point-name-label', html: name, iconAnchor:[40,25] }), interactive:false }).addTo(map);
+        }
+
+        features[id] = { id, type, name, layer };
+        addSidebarCard(id);
+        layer.on('click', (ev) => { L.DomEvent.stopPropagation(ev); selectFeature(id); });
+        selectFeature(id);
+    }
+
+    function addSidebarCard(id) {
+        const f = features[id];
+        const card = document.createElement('div');
+        card.className = 'feature-card'; card.id = `card-${id}`;
+        card.onclick = () => selectFeature(id);
+        card.innerHTML = `
+            <div class="card-header">
+                <span class="card-title" id="title-${id}">${f.name}</span>
+                <button class="btn-del-main" onclick="deleteFeat(${id}, event)">ELIMINAR</button>
+            </div>
+            <div class="card-content" id="coords-${id}"></div>`;
+        document.getElementById(`list-${f.type}`).appendChild(card);
+        updateCardData(id);
+    }
+
+    function updateCardData(id) {
+        const f = features[id];
+        let latlngs = f.type === 'point' ? [f.layer.getLatLng()] : (f.type === 'area' ? f.layer.getLatLngs()[0] : f.layer.getLatLngs());
+        
+        if(f.type === 'line') {
+            let d = 0; for(let i=0; i<latlngs.length-1; i++) d += map.distance(latlngs[i], latlngs[i+1]);
+            document.getElementById(`title-${id}`).innerText = `${f.name}: ${d.toFixed(2)} m`;
+        } else if(f.type === 'area') {
+            let area = 0; const utms = latlngs.map(ll => toUTM(ll));
+            for (let i = 0; i < utms.length; i++) {
+                let j = (i + 1) % utms.length;
+                area += utms[i].x * utms[j].y; area -= utms[j].x * utms[i].y;
+            }
+            document.getElementById(`title-${id}`).innerText = `${f.name}: ${(Math.abs(area)/2).toFixed(2)} m²`;
+        }
+
+        document.getElementById(`coords-${id}`).innerHTML = latlngs.map((ll, i) => {
+            const u = toUTM(ll);
+            return `<div class="utm-row"><span>V${i+1}: E ${u.x.toFixed(2)} | N ${u.y.toFixed(2)}</span></div>`;
+        }).join('');
+    }
+
+    function selectFeature(id) {
+        deselectAll(); selectedId = id;
+        document.getElementById(`card-${id}`).classList.add('selected');
+        if(features[id].type !== 'point') features[id].layer.setStyle({color:'cyan', weight:4});
+    }
+
+    function deselectAll() {
+        Object.values(features).forEach(f => {
+            if(f.type !== 'point') f.layer.setStyle({color:'red', weight:2});
+            document.getElementById(`card-${f.id}`).classList.remove('selected');
+        });
+    }
+
+    function deleteFeat(id, ev) {
+        ev.stopPropagation();
+        map.removeLayer(features[id].layer);
+        if(pointLabels[id]) map.removeLayer(pointLabels[id]);
+        document.getElementById(`card-${id}`).remove();
+        delete features[id];
+    }
 </script>
 </body>
 </html>
