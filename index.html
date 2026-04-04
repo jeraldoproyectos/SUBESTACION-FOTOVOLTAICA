@@ -112,66 +112,61 @@
     var map = L.map('map', { zoomControl: false, minZoom: 17, maxZoom: 23 }).setView([-20.351387, -69.721985], 19);
     L.tileLayer('https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', { maxZoom: 23 }).addTo(map);
 
-// 2. CAPA FUNDACIONES (Imagen Única con coordenadas exactas)
-map.createPane('planoPane');
-map.getPane('planoPane').style.zIndex = 500;
+    // --- MANEJO DE CAPAS (Z-INDEX) ---
+    // Creamos panes específicos para asegurar el orden: Ortofotos abajo, Plano arriba.
+    map.createPane('ortofotoPane');
+    map.getPane('ortofotoPane').style.zIndex = 400; // Nivel bajo
 
-// Asegúrate de que el archivo se llame 'fundaciones.png' o cambia el nombre aquí
-var imageUrl = 'fundaciones.png'; 
+    map.createPane('planoPane');
+    map.getPane('planoPane').style.zIndex = 600; // Nivel alto (sobre las ortofotos)
 
-// Coordenadas obtenidas de tu captura:
-// North: -20.35075960... | West: -69.72257411...
-// South: -20.35158771... | East: -69.72122945...
-var imageBounds = [
-    [-20.3515877111762, -69.7225741140323], // Esquina Sur-Oeste [South, West]
-    [-20.3507596037813, -69.7212294598894]  // Esquina Norte-Este [North, East]
-];
+    // 2. CAPA FUNDACIONES (Sobre todas las ortofotos)
+    var imageUrl = 'fundaciones.png'; 
+    var imageBounds = [
+        [-20.3515877111762, -69.7225741140323], 
+        [-20.3507596037813, -69.7212294598894] 
+    ];
 
-var layerFundaciones = L.imageOverlay(imageUrl, imageBounds, {
-    pane: 'planoPane',
-    opacity: 0.85,
-    interactive: true
-}).addTo(map);
+    var layerFundaciones = L.imageOverlay(imageUrl, imageBounds, {
+        pane: 'planoPane', // Asegura que esté arriba
+        opacity: 0.85,
+        interactive: true
+    }).addTo(map);
 
-// Mantener la funcionalidad del checkbox
-document.getElementById('check-fundaciones').onchange = (e) => {
-    if(e.target.checked) map.addLayer(layerFundaciones);
-    else map.removeLayer(layerFundaciones);
-};
-    // 3. ORTOFOTOS (Corregido: Arrays limpios)
+    document.getElementById('check-fundaciones').onchange = (e) => {
+        if(e.target.checked) map.addLayer(layerFundaciones);
+        else map.removeLayer(layerFundaciones);
+    };
+
+    // 3. ORTOFOTOS (Con efecto Imán / Sin transparencia)
     var fechas = ["03/12/2025", "09/01/2026", "21/01/2026", "23/01/2026", "28/01/2026", "06/02/2026", "07/02/2026", "10/02/2026", "13/02/2026", "27/02/2026", "11/03/2026", "26/03/2026"];
     var folders = ["03122025", "09012026", "21012026", "23012026", "28012026", "06022026", "07022026", "10022026", "13022026", "27022026", "11032026", "26032026"];
     
     var capas = folders.map((f, i) => {
-        return L.tileLayer(f + '/Z{z}/{y}/{x}.png', { maxZoom: 23, opacity: 0 }).addTo(map);
+        return L.tileLayer(f + '/Z{z}/{y}/{x}.png', { 
+            maxZoom: 23, 
+            opacity: 0,
+            pane: 'ortofotoPane' // Se quedan en el fondo
+        }).addTo(map);
     });
 
     var slider = document.getElementById('smooth-slider');
-    slider.max = (capas.length - 1) * 100;
-    slider.value = slider.max; // Inicia en la fecha más reciente
+    slider.max = capas.length - 1;
+    slider.step = 1;
+    slider.value = capas.length - 1; 
 
     function updateView() {
-        var val = parseFloat(slider.value);
-        var idx = Math.floor(val / 100);
-        var sub = (val % 100) / 100;
-        
-        if (idx >= capas.length - 1) { 
-            idx = capas.length - 1; 
-            sub = 0; 
-        }
-
+        var idx = parseInt(slider.value);
         capas.forEach((c, i) => {
-            if (i === idx) c.setOpacity(1 - sub);
-            else if (i === idx + 1) c.setOpacity(sub);
+            if (i === idx) c.setOpacity(1);
             else c.setOpacity(0);
         });
-
-        document.getElementById('fecha-label').innerText = (sub > 0.5) ? fechas[idx + 1] : fechas[idx];
+        document.getElementById('fecha-label').innerText = fechas[idx];
     }
     slider.oninput = updateView;
     updateView();
 
-    // 4. LÓGICA DE DIBUJO Y MEDICIÓN
+    // 4. LÓGICA DE DIBUJO Y MEDICIÓN (Se mantiene igual)
     let currentMode = null, drawingPoints = [], tempLayer = null, guideLine = null;
     let features = {}, counters = { line: 0, area: 0, point: 0 };
     let selectedId = null, editMarkers = [], pointLabels = {};
