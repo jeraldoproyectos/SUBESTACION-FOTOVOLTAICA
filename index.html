@@ -112,20 +112,32 @@
     var map = L.map('map', { zoomControl: false, minZoom: 17, maxZoom: 23 }).setView([-20.351387, -69.721985], 19);
     L.tileLayer('https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', { maxZoom: 23 }).addTo(map);
 
-    // 2. CAPA FUNDACIONES
-    map.createPane('planoPane');
-    map.getPane('planoPane').style.zIndex = 500;
-    var layerFundaciones = L.tileLayer('fundaciones/Z{z}/{y}/{x}.png', { 
-        pane: 'planoPane', 
-        maxZoom: 23, 
-        opacity: 0.85 
-    }).addTo(map);
+// 2. CAPA FUNDACIONES (Imagen Única con coordenadas exactas)
+map.createPane('planoPane');
+map.getPane('planoPane').style.zIndex = 500;
 
-    document.getElementById('check-fundaciones').onchange = (e) => {
-        if(e.target.checked) map.addLayer(layerFundaciones);
-        else map.removeLayer(layerFundaciones);
-    };
+// Asegúrate de que el archivo se llame 'fundaciones.png' o cambia el nombre aquí
+var imageUrl = 'fundaciones.png'; 
 
+// Coordenadas obtenidas de tu captura:
+// North: -20.35075960... | West: -69.72257411...
+// South: -20.35158771... | East: -69.72122945...
+var imageBounds = [
+    [-20.3515877111762, -69.7225741140323], // Esquina Sur-Oeste [South, West]
+    [-20.3507596037813, -69.7212294598894]  // Esquina Norte-Este [North, East]
+];
+
+var layerFundaciones = L.imageOverlay(imageUrl, imageBounds, {
+    pane: 'planoPane',
+    opacity: 0.85,
+    interactive: true
+}).addTo(map);
+
+// Mantener la funcionalidad del checkbox
+document.getElementById('check-fundaciones').onchange = (e) => {
+    if(e.target.checked) map.addLayer(layerFundaciones);
+    else map.removeLayer(layerFundaciones);
+};
     // 3. ORTOFOTOS (Corregido: Arrays limpios)
     var fechas = ["03/12/2025", "09/01/2026", "21/01/2026", "23/01/2026", "28/01/2026", "06/02/2026", "07/02/2026", "10/02/2026", "13/02/2026", "27/02/2026", "11/03/2026", "26/03/2026"];
     var folders = ["03122025", "09012026", "21012026", "23012026", "28012026", "06022026", "07022026", "10022026", "13022026", "27022026", "11032026", "26032026"];
