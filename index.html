@@ -37,7 +37,7 @@
         .brand-logo { position: absolute; bottom: 20px; left: 20px; z-index: 2000; width: 150px; filter: drop-shadow(0 2px 5px rgba(0,0,0,0.7)); pointer-events: none; }
         .corner-logo { position: absolute; top: 15px; right: 15px; z-index: 2000; width: 80px; pointer-events: none; }
 
-        /* UI BOTTOM REDISEÑADA */
+        /* UI BOTTOM */
         .ui-bottom { position: absolute; bottom: 25px; left: 50%; transform: translateX(-50%); width: 420px; z-index: 2000; display: flex; flex-direction: column; align-items: center; gap: 8px; }
         .utm-box { background: rgba(0,0,0,0.9); color: var(--utm-green); padding: 5px 12px; border-radius: 4px; border: 1px solid #444; font-family: monospace; font-size: 11px; }
         .slider-wrapper { background: rgba(0,0,0,0.95); padding: 12px; border-radius: 8px; width: 100%; border: 1px solid #444; display: flex; flex-direction: column; align-items: center; gap: 10px; }
@@ -112,7 +112,7 @@
     var map = L.map('map', { zoomControl: false, minZoom: 17, maxZoom: 23 }).setView([-20.351387, -69.721985], 19);
     L.tileLayer('https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', { maxZoom: 23 }).addTo(map);
 
-    // 2. CAPA FUNDACIONES (Carpeta)
+    // 2. CAPA FUNDACIONES
     map.createPane('planoPane');
     map.getPane('planoPane').style.zIndex = 500;
     var layerFundaciones = L.tileLayer('fundaciones/Z{z}/{y}/{x}.png', { 
@@ -126,9 +126,9 @@
         else map.removeLayer(layerFundaciones);
     };
 
-    // 3. ORTOFOTOS (Orden Cronológico)
-    var fechas = ["03/12/2025", "09/01/2026", "21/01/2026", "23/01/2026", "28/01/2026", "06/02/2026", "07/02/2026", "10/02/2026", "13/02/2026", "27/02/2026", "11032026", "26032026"]];
-    var folders = ["03122025", "09012026", "21012026", "23012026", "28012026", "06022026", "07022026", "10022026", "13022026", "27022026", "11032026", , "26032026"];
+    // 3. ORTOFOTOS (Corregido: Arrays limpios)
+    var fechas = ["03/12/2025", "09/01/2026", "21/01/2026", "23/01/2026", "28/01/2026", "06/02/2026", "07/02/2026", "10/02/2026", "13/02/2026", "27/02/2026", "11/03/2026", "26/03/2026"];
+    var folders = ["03122025", "09012026", "21012026", "23012026", "28012026", "06022026", "07022026", "10022026", "13022026", "27022026", "11032026", "26032026"];
     
     var capas = folders.map((f, i) => {
         return L.tileLayer(f + '/Z{z}/{y}/{x}.png', { maxZoom: 23, opacity: 0 }).addTo(map);
@@ -136,20 +136,30 @@
 
     var slider = document.getElementById('smooth-slider');
     slider.max = (capas.length - 1) * 100;
-    slider.value = slider.max; // Inicia en la fecha más reciente (Derecha)
+    slider.value = slider.max; // Inicia en la fecha más reciente
 
     function updateView() {
         var val = parseFloat(slider.value);
         var idx = Math.floor(val / 100);
         var sub = (val % 100) / 100;
-        if (idx >= capas.length - 1) { idx = capas.length - 2; sub = 1; }
-        capas.forEach((c, i) => c.setOpacity(i === idx ? 1 - sub : (i === idx + 1 ? sub : 0)));
+        
+        if (idx >= capas.length - 1) { 
+            idx = capas.length - 1; 
+            sub = 0; 
+        }
+
+        capas.forEach((c, i) => {
+            if (i === idx) c.setOpacity(1 - sub);
+            else if (i === idx + 1) c.setOpacity(sub);
+            else c.setOpacity(0);
+        });
+
         document.getElementById('fecha-label').innerText = (sub > 0.5) ? fechas[idx + 1] : fechas[idx];
     }
     slider.oninput = updateView;
     updateView();
 
-    // 4. LÓGICA DE DIBUJO Y MEDICIÓN (Restaurada)
+    // 4. LÓGICA DE DIBUJO Y MEDICIÓN
     let currentMode = null, drawingPoints = [], tempLayer = null, guideLine = null;
     let features = {}, counters = { line: 0, area: 0, point: 0 };
     let selectedId = null, editMarkers = [], pointLabels = {};
@@ -305,7 +315,9 @@
     function deleteFeat(id, ev) {
         ev.stopPropagation(); map.removeLayer(features[id].layer);
         if(pointLabels[id]) map.removeLayer(pointLabels[id]);
-        document.getElementById(`card-${id}`).remove(); delete features[id]; deselectAll();
+        const card = document.getElementById(`card-${id}`);
+        if(card) card.remove(); 
+        delete features[id]; deselectAll();
     }
 </script>
 </body>
